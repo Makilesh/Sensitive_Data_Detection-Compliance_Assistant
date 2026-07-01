@@ -116,6 +116,38 @@ def test_ollama_only_configuration() -> None:
     assert any(m.provider == "ollama" for m in settings.model_registry)
 
 
+def test_local_only_mode_blocks_cloud_and_uses_ollama(tmp_path) -> None:
+    """local-only mode skips cloud Gemini even with a key and routes to Ollama."""
+    clock = FakeClock()
+    models = [ModelSpec(name="m1", rpm=5, rpd=100, tpm=100_000)]
+    settings = Settings(
+        gemini_api_key="test-key",
+        model_registry=models,
+        enable_ollama=True,
+        ollama_model="qwen2.5:14b",
+        local_only_mode=True,
+    )
+    rl = RateLimiter(settings.model_registry, str(tmp_path / "rl.json"), now=clock)
+    client = GeminiClient(settings=settings, rate_limiter=rl, now=clock, sleep=lambda _s: None)
+
+    # If cloud were used this would fire; it must not be reached.
+    client._invoke_sdk = lambda *a: (_ for _ in ()).throw(AssertionError("cloud used!"))  # type: ignore
+    client._invoke_ollama = lambda *a: ("local answer", 4)  # type: ignore[assignment]
+
+    assert client.is_configured
+    result = client.generate("hi")
+    assert result.model_used == "qwen2.5:14b"
+    assert result.text == "local answer"
+
+
+def test_runtime_local_only_toggle() -> None:
+    settings = Settings(gemini_api_key="key", enable_ollama=False)
+    client = GeminiClient(settings=settings)
+    assert client.is_configured  # gemini available
+    client.set_local_only(True)
+    assert not client.is_configured  # cloud blocked, no local backend
+
+
 def test_successful_call_records_usage(tmp_path) -> None:
     clock = FakeClock()
     client, rl = _client(tmp_path, clock)
