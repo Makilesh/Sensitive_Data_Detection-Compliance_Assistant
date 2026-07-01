@@ -10,11 +10,14 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
+from src.classification.risk import classify_risk
 from src.config import Settings, get_settings
 from src.detection.engine import run_detection, summarize_counts
 from src.ingestion.loaders import UnsupportedFileTypeError, load_document
 from src.llm.gemini_client import GeminiClient
-from src.models import Document, Finding
+from src.models import Document, Finding, RiskLevel, RiskReport
+
+_RISK_COLORS = {RiskLevel.LOW: "green", RiskLevel.MEDIUM: "orange", RiskLevel.HIGH: "red"}
 
 
 def get_client() -> GeminiClient:
@@ -31,6 +34,25 @@ def get_findings(document: Document, settings: Settings) -> list[Finding]:
         with st.spinner("Detecting sensitive data…"):
             cache[document.doc_id] = run_detection(document, get_client(), settings)
     return cache[document.doc_id]
+
+
+def get_risk(document: Document, findings: list[Finding], settings: Settings) -> RiskReport:
+    """Classify (once per doc_id) and cache the risk report."""
+    cache = st.session_state.setdefault("risk_cache", {})
+    if document.doc_id not in cache:
+        cache[document.doc_id] = classify_risk(findings, document.page_count, settings)
+    return cache[document.doc_id]
+
+
+def render_risk(report: RiskReport) -> None:
+    color = _RISK_COLORS[report.level]
+    st.markdown(f"### Overall risk: :{color}[{report.level.value}]")
+    st.metric("Risk score", report.score)
+    st.write(report.summary)
+    if report.contributors:
+        st.write("**Contributor breakdown**")
+        data = {c.entity_type.value: c.contribution for c in report.contributors}
+        st.bar_chart(pd.Series(data, name="contribution"))
 
 
 def render_quota_panel(client: GeminiClient) -> None:
@@ -129,12 +151,17 @@ def main() -> None:
 
     st.success(f"Loaded **{document.filename}** — `{document.doc_id}`")
     findings = get_findings(document, settings)
+    risk = get_risk(document, findings, settings)
 
-    overview_tab, findings_tab = st.tabs(["📄 Overview", "🔍 Findings"])
+    overview_tab, findings_tab, risk_tab = st.tabs(
+        ["📄 Overview", "🔍 Findings", "⚠️ Risk"]
+    )
     with overview_tab:
         render_overview(document, findings)
     with findings_tab:
         render_findings(findings)
+    with risk_tab:
+        render_risk(risk)
 
 
 if __name__ == "__main__":
