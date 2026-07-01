@@ -30,3 +30,29 @@ minor improvements — with rationale.
 - **D6 — Env prefix `SDA_` with `GEMINI_API_KEY` aliased.** Namespaces our own
   settings while keeping the conventional secret name. Verified the alias reads
   the unprefixed variable.
+
+## Phase 2
+
+- **D7 — Single `load_document()` dispatch by extension.** One ingestion entry
+  point returning `Document`; UI/detection depend only on that contract.
+- **D8 — Retain the CSV DataFrame in `Document.metadata`.** Enables column-level
+  detection (naming the offending column) without re-parsing. Trade-off: keeps a
+  DataFrame in memory; acceptable for single-doc processing.
+- **D9 — OCR isolated + config-gated, replaces text only if it yields more.**
+  Ingestion degrades gracefully when Tesseract is absent (local env has no
+  binary); Docker image installs it (P10).
+
+## Phase 3
+
+- **D10 — Sliding-window RPM/TPM in memory, RPD persisted.** 60s windows are
+  ephemeral (safe to lose on restart); the daily counter must survive restarts so
+  it is written to a small JSON keyed by date. Rationale: correctness of the daily
+  cap without a database.
+- **D11 — Injectable clock + isolated `_invoke_sdk`.** Makes the entire rotation
+  engine deterministically testable (fake clock, simulated 429/5xx) with no
+  network or SDK dependency in tests.
+- **D12 — Raise `AllModelsExhausted` instead of long blocking waits.** Predictable
+  behavior and lets callers degrade to deterministic fallbacks; `seconds_until_
+  available` is exposed for optional short waits/UI but not used to block.
+- **D13 — Error classification by status code + class name + message.** Robust to
+  the SDK not being importable in tests and to message-only rate-limit signals.

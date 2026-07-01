@@ -14,7 +14,7 @@ Gemini free tier with a rate-limit-aware model-rotation client.
 |------:|-------|--------|
 | 1 | Project scaffold & config | ✅ done |
 | 2 | Document ingestion (PDF/TXT/CSV + OCR) | ✅ done |
-| 3 | Gemini model-rotation client (rate-limit engine) | ⏳ pending |
+| 3 | Gemini model-rotation client (rate-limit engine) | ✅ done |
 | 4 | Sensitive data detection engine | ⏳ pending |
 | 5 | Risk classification | ⏳ pending |
 | 6 | RAG Q&A over the document | ⏳ pending |
@@ -24,14 +24,14 @@ Gemini free tier with a rate-limit-aware model-rotation client.
 | 10 | Dockerization, deployment & documentation | ⏳ pending |
 
 ## Current State
-Phases 1–2 complete. Runnable skeleton + typed config + shared models (P1);
-multi-format ingestion (PDF via PyMuPDF, TXT with charset detection, CSV via
-pandas) with a config-gated Tesseract OCR fallback, normalized `Document` with
-page/line/column metadata, wired into the uploader with a preview (P2). 12 tests
-green, `ruff` clean.
+Phases 1–3 complete. Skeleton + config + models (P1); multi-format ingestion +
+OCR (P2); rate-limit-aware Gemini rotation client — `RateLimiter` (sliding-window
+RPM/TPM + persisted daily RPD, injectable clock, atomic) and `GeminiClient`
+(429 failover, 5xx backoff, `AllModelsExhausted`), with a live sidebar quota
+panel (P3). 22 tests green, `ruff` clean.
 
 ## Next Task
-Phase 3 — the Gemini model-rotation client: `llm/rate_limiter.py` (sliding-window
-RPM, TPM estimate, daily RPD with persistence) and `llm/gemini_client.py`
-(429 failover across the registry, backoff, `AllModelsExhausted`), plus a sidebar
-quota panel.
+Phase 4 — sensitive data detection engine: `detection/patterns.py` (regex +
+Verhoeff/Luhn/IFSC validators), `detection/ner.py` (spaCy), `detection/
+llm_contextual.py` (Gemini JSON pass), `detection/engine.py` (orchestrate +
+dedupe + mask), Findings tab in the UI.

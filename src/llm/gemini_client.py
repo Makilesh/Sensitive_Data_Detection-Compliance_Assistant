@@ -116,7 +116,6 @@ class GeminiClient:
             raise LLMUnavailableError("GEMINI_API_KEY is not set")
 
         prompt_tokens = estimate_tokens(prompt)
-        last_error: BaseException | None = None
 
         for spec in self._settings.model_registry:
             if not self._rate_limiter.can_use(spec.name):
@@ -131,7 +130,7 @@ class GeminiClient:
         # Nothing served the request.
         raise AllModelsExhausted(
             "All Gemini models are rate-limited or exhausted; try again later."
-        ) from last_error
+        )
 
     def _try_model(
         self,

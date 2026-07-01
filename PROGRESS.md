@@ -61,3 +61,33 @@ Running log of per-phase completion + self-review outcomes.
 on the scanned sample.
 
 **Next:** Phase 3 — rate-limit-aware Gemini model-rotation client.
+
+## Phase 3 — Gemini Model-Rotation Client ✅
+
+**Completed**
+- `llm/rate_limiter.py`: `RateLimiter` with trailing-60s RPM + TPM sliding windows
+  and daily RPD persisted to JSON (resets on day roll). Lock-guarded `can_use` /
+  `record` for atomic accounting; injectable clock; `mark_cooldown`,
+  `seconds_until_available`, and `snapshot()` (→ `ModelUsage`) for the UI.
+- `llm/gemini_client.py`: `GeminiClient.generate()` rotates over the registry,
+  cools down a model on 429/`ResourceExhausted`, retries 5xx with exponential
+  backoff, records token usage, and raises `AllModelsExhausted` when all capped.
+  Real SDK call isolated in `_invoke_sdk` (lazy import). Error classification via
+  `_is_rate_limit_error` / `_is_transient_error`.
+- `llm/prompts.py`: shared anti-hallucination `SYSTEM_PREAMBLE` + `with_preamble`.
+- UI: sidebar quota panel (per-model RPM/RPD, availability, last model used).
+- `config.py`: `populate_by_name=True` so settings can be built by field name.
+- Tests: `test_rate_limiter.py` (5) + `test_gemini_client.py` (5) using a fake
+  clock — RPM/TPM/RPD block+free, RPD persistence + day reset, cooldown, 429
+  rotation, 5xx retry-then-succeed, `AllModelsExhausted`, unconfigured guard.
+
+**Self code review outcome**
+- Removed a dead `last_error` variable in `generate()` (was always `None`).
+- Confirmed limits are data-only (config registry), never hardcoded in logic —
+  values still need verifying at the rate-limits URL before final submission.
+- `ruff` clean; 22 tests green; app launches with the live quota panel.
+
+**Definition of Done:** ✅ forced-429 rotation verified by test; UI shows live
+per-model quota.
+
+**Next:** Phase 4 — deterministic + contextual detection engine.
