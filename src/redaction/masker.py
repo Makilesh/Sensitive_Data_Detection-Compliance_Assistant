@@ -62,13 +62,30 @@ def mask_value(entity_type: EntityType, raw: str) -> str:
     return f"{raw[0]}{'*' * (len(raw) - 2)}{raw[-1]}"
 
 
-def redact_text(text: str, findings: list[Finding], base_offset: int = 0) -> str:
-    """Replace each finding's span in ``text`` with its masked value.
+def replacement_for(finding: Finding, style: str = "mask") -> str:
+    """Return the string that replaces a finding's raw value.
+
+    ``style`` = "mask" → partial masked value (e.g. ``****1234``);
+    ``style`` = "placeholder" → ``[REDACTED:TYPE]``.
+    """
+    if style == "placeholder":
+        return f"[REDACTED:{finding.entity_type.value}]"
+    return finding.value_masked
+
+
+def redact_text(
+    text: str,
+    findings: list[Finding],
+    base_offset: int = 0,
+    style: str = "mask",
+) -> str:
+    """Replace each finding's span in ``text`` with its redacted rendering.
 
     ``base_offset`` is the absolute char offset of ``text`` within the document,
     so a segment can be redacted using document-relative finding spans. Spans are
     applied right-to-left so earlier offsets stay valid. This is the single
-    document-level redaction primitive, reused by RAG (P6) and export (P8).
+    document-level redaction primitive, reused by RAG (P6, "mask") and export
+    (P8, configurable style).
     """
     length = len(text)
     spans = sorted(findings, key=lambda f: f.start, reverse=True)
@@ -76,5 +93,5 @@ def redact_text(text: str, findings: list[Finding], base_offset: int = 0) -> str
         start = finding.start - base_offset
         end = finding.end - base_offset
         if 0 <= start < end <= length:
-            text = text[:start] + finding.value_masked + text[end:]
+            text = text[:start] + replacement_for(finding, style) + text[end:]
     return text
