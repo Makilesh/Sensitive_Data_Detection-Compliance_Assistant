@@ -18,6 +18,7 @@ from src.ingestion.loaders import UnsupportedFileTypeError, load_document
 from src.llm.gemini_client import GeminiClient
 from src.models import Document, Finding, RiskLevel, RiskReport
 from src.rag.qa import answer_question, build_index
+from src.redaction.export import redact_csv, redact_pdf, redact_txt
 
 _RISK_COLORS = {RiskLevel.LOW: "green", RiskLevel.MEDIUM: "orange", RiskLevel.HIGH: "red"}
 
@@ -55,6 +56,44 @@ def render_risk(report: RiskReport) -> None:
         st.write("**Contributor breakdown**")
         data = {c.entity_type.value: c.contribution for c in report.contributors}
         st.bar_chart(pd.Series(data, name="contribution"))
+
+
+def render_redaction(
+    document: Document, findings: list[Finding], raw_bytes: bytes, settings: Settings
+) -> None:
+    st.caption(
+        f"Redaction style: **{settings.redaction_style}**. Download a sanitized copy "
+        "with all detected sensitive values removed."
+    )
+    redacted_text = redact_txt(document, findings, settings)
+    left, right = st.columns(2)
+    with left:
+        st.write("**Original (masked preview)**")
+        st.text(document.text[:1500])
+    with right:
+        st.write("**Redacted**")
+        st.text(redacted_text[:1500])
+
+    st.download_button(
+        "⬇️ Download redacted TXT",
+        data=redacted_text,
+        file_name=f"redacted_{document.filename}.txt",
+        mime="text/plain",
+    )
+    if document.file_type == "pdf":
+        st.download_button(
+            "⬇️ Download redacted PDF",
+            data=redact_pdf(raw_bytes, findings, settings),
+            file_name=f"redacted_{document.filename}",
+            mime="application/pdf",
+        )
+    if document.file_type == "csv":
+        st.download_button(
+            "⬇️ Download redacted CSV",
+            data=redact_csv(document, findings, settings),
+            file_name=f"redacted_{document.filename}",
+            mime="text/csv",
+        )
 
 
 def render_summary(document: Document, findings: list[Finding], risk: RiskReport, settings: Settings) -> None:
@@ -210,8 +249,9 @@ def main() -> None:
         st.info("👆 Upload a PDF, TXT, or CSV file to begin.")
         return
 
+    raw_bytes = uploaded.getvalue()
     try:
-        document = load_document(uploaded.name, uploaded.getvalue(), settings)
+        document = load_document(uploaded.name, raw_bytes, settings)
     except UnsupportedFileTypeError as exc:
         st.error(str(exc))
         return
