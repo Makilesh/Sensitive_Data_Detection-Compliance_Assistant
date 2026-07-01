@@ -74,6 +74,15 @@ minor improvements — with rationale.
 - **D18 — LLM snippets verified verbatim against source text.** Any snippet not
   found by exact substring match is discarded — concrete anti-hallucination guard.
 
+## Phase 9
+
+- **D26 — Hash questions in the audit log.** User questions may themselves contain
+  PII, so only a sha256[:12] + length is stored, never the verbatim text — keeps
+  the log PII-free while preserving de-dup/traceability.
+- **D27 — Per-doc_id caches are the multi-doc mechanism.** Findings/risk/store/
+  summary caches keyed by content hash mean switching documents is inherently
+  correct and re-uploads are instant; corpus mode merges the per-doc stores.
+
 ## Phase 8
 
 - **D24 — True PDF redaction via `apply_redactions()`.** Redaction annotations

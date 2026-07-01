@@ -240,3 +240,30 @@ downloadable report and working template fallback.
 values.
 
 **Next:** Phase 9 — audit logging & multi-document support.
+
+## Phase 9 — Audit Logging & Multi-Document Support ✅
+
+**Completed**
+- `src/audit.py`: append-only JSONL. `log_detection` (doc_id, type counts, risk
+  level, model, latency), `log_query` (question hashed + length, grounded flag,
+  model, latency), `read_recent`. Lock-guarded, best-effort writes; only masked
+  metadata — never raw values or verbatim questions.
+- `rag/qa.py`: extracted shared `_synthesize()`; added `answer_corpus()` merging
+  retrieval across multiple document stores.
+- UI multi-doc: `accept_multiple_files=True`, per-doc caches keyed by doc_id,
+  sidebar document switcher, corpus-mode checkbox in Chat, sidebar Audit expander.
+  Detection logged once per doc; each query logged with latency.
+- Tests (`test_audit.py`, 4): detection event written, question hashed (no raw
+  text), no raw values in detection log, recent limit + order; plus corpus
+  counting test in `test_rag.py`.
+
+**Self code review outcome**
+- Verified no raw PII or verbatim questions reach the log (asserted email + card).
+- Per-doc_id caches make document switching correct by construction; audit
+  de-duped via an `audited_docs` set so re-render doesn't double-log.
+- Audit file (`*.jsonl`) is gitignored. `ruff` clean; 57 tests green; app launches.
+
+**Definition of Done:** ✅ audit populated & PII-free; multiple documents handled in
+one session with a switcher + corpus mode.
+
+**Next:** Phase 10 — Docker, deployment & documentation.

@@ -20,7 +20,7 @@ Gemini free tier with a rate-limit-aware model-rotation client.
 | 6 | RAG Q&A over the document | ✅ done |
 | 7 | AI compliance summary | ✅ done |
 | 8 | Redaction / masking & sanitized export | ✅ done |
-| 9 | Audit logging & multi-document support | ⏳ pending |
+| 9 | Audit logging & multi-document support | ✅ done |
 | 10 | Dockerization, deployment & documentation | ⏳ pending |
 
 ## Current State
@@ -36,9 +36,12 @@ persisted FAISS per doc, grounded cited synthesis with refusal + deterministic
 counting; Chat tab. Compliance summary (P7) — masked brief → GDPR/DPDP/PCI-DSS
 observations + risks + remediation, deterministic template fallback; Summary tab +
 Markdown download. Redaction (P8) — TXT/PDF/CSV sanitized export (PyMuPDF true
-redaction) with zero leaked values; Redaction tab. 52 tests green, `ruff` clean.
+redaction) with zero leaked values; Redaction tab. Audit + multi-doc (P9) —
+append-only PII-free JSONL (hashed questions), multi-file upload + document
+switcher + corpus mode + Audit expander. 57 tests green, `ruff` clean.
 
 ## Next Task
-Phase 9 — audit logging + multi-document support: `audit.py` append-only JSONL
-(masked, PII-free) for detection runs and Q&A; multi-doc session with a document
-switcher; Audit expander in the UI.
+Phase 10 — Dockerization, deployment & documentation: `Dockerfile` +
+`docker-compose.yml` (Tesseract + spaCy model), `packages.txt`, README with all 5
+mandatory sections, `RESULTS.md` honest evaluation, Streamlit Cloud deploy notes,
+demo-video script.
