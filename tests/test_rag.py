@@ -90,6 +90,18 @@ def test_grounded_answer_has_citations(tmp_path) -> None:
     assert result.model_used == "fake-model"
 
 
+def test_corpus_counting_sums_across_documents(tmp_path) -> None:
+    doc = _doc()
+    findings = _findings(doc)
+    settings = Settings(index_dir=str(tmp_path / "idx"))
+    store = qa.build_index(doc, findings, settings=settings)
+    # Two "documents" worth of findings merged; corpus counting sums them.
+    result = qa.answer_corpus(
+        "How many emails in total?", findings + findings, None, [store, store], settings=settings
+    )
+    assert "2 email" in result.answer
+
+
 def test_index_persists_and_reloads(tmp_path) -> None:
     doc = _doc()
     findings = _findings(doc)

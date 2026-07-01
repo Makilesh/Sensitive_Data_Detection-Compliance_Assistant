@@ -75,6 +75,35 @@ def answer_question(
         return count_answer
 
     hits = store.search(embedder.embed_one(question), settings.retrieval_top_k)
+    return _synthesize(question, hits, client, settings)
+
+
+def answer_corpus(
+    question: str,
+    findings_all: list[Finding],
+    client: GeminiClient | None,
+    stores: list[FaissStore],
+    embedder: LocalEmbedder | None = None,
+    settings: Settings | None = None,
+) -> QAResult:
+    """Answer a question across multiple documents by merging their retrievals."""
+    settings = settings or get_settings()
+    embedder = embedder or get_embedder()
+
+    count_answer = _try_counting(question, findings_all)
+    if count_answer is not None:
+        return count_answer
+
+    query_vec = embedder.embed_one(question)
+    merged: list[tuple] = []
+    for store in stores:
+        merged.extend(store.search(query_vec, settings.retrieval_top_k))
+    merged.sort(key=lambda cs: cs[1], reverse=True)
+    return _synthesize(question, merged[: settings.retrieval_top_k], client, settings)
+
+
+def _synthesize(question, hits, client, settings) -> QAResult:
+    """Shared refusal / degrade / grounded-synthesis logic over retrieved hits."""
     strong = [(c, s) for c, s in hits if s >= settings.rag_min_score]
     if not strong:
         return QAResult(answer=_REFUSAL, citations=[], grounded=False)
@@ -85,13 +114,11 @@ def answer_question(
     ]
 
     if client is None or not client.is_configured:
-        # Degrade gracefully: surface the retrieved (masked) context itself.
         joined = "\n".join(f"- {c.text}" for c, _ in strong)
         return QAResult(
             answer=f"(LLM unavailable — most relevant context)\n{joined}",
             citations=citations,
             grounded=True,
-            model_used=None,
         )
 
     context = "\n".join(
@@ -105,7 +132,6 @@ def answer_question(
             answer=f"(LLM unavailable — most relevant context)\n{joined}",
             citations=citations,
             grounded=True,
-            model_used=None,
         )
 
     grounded = _REFUSAL[:30].lower() not in result.text.lower()
