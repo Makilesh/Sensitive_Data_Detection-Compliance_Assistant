@@ -16,6 +16,7 @@ from src.detection.engine import run_detection, summarize_counts
 from src.ingestion.loaders import UnsupportedFileTypeError, load_document
 from src.llm.gemini_client import GeminiClient
 from src.models import Document, Finding, RiskLevel, RiskReport
+from src.rag.qa import answer_question, build_index
 
 _RISK_COLORS = {RiskLevel.LOW: "green", RiskLevel.MEDIUM: "orange", RiskLevel.HIGH: "red"}
 
