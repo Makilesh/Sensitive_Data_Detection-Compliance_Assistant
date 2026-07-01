@@ -8,10 +8,18 @@ services:
       # Set GEMINI_API_KEY in your shell or a .env file next to this compose file.
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - SDA_ENABLE_OCR=${SDA_ENABLE_OCR:-true}
+      # Local Ollama runs on the HOST, not in this container — reach it via
+      # host.docker.internal. Set SDA_ENABLE_OLLAMA=false to disable the fallback.
+      - SDA_ENABLE_OLLAMA=${SDA_ENABLE_OLLAMA:-true}
+      - SDA_OLLAMA_HOST=${SDA_OLLAMA_HOST:-http://host.docker.internal:11434}
+      - SDA_OLLAMA_MODEL=${SDA_OLLAMA_MODEL:-qwen2.5:14b}
       # Keep persisted artifacts under a single mounted directory.
       - SDA_INDEX_DIR=/app/runtime/indexes
       - SDA_AUDIT_LOG_FILE=/app/runtime/audit_log.jsonl
       - SDA_RATE_LIMIT_STATE_FILE=/app/runtime/.rate_limits.json
+    extra_hosts:
+      # Lets the container resolve the host on Linux (built-in on Docker Desktop).
+      - "host.docker.internal:host-gateway"
     volumes:
       # Persist RAG indexes, audit log, and quota state across restarts.
       - ./runtime:/app/runtime
