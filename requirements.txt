@@ -1,0 +1,34 @@
+# Core UI
+streamlit==1.39.0
+
+# LLM (Google Gemini free tier)
+google-generativeai==0.8.3
+
+# Config & data models
+python-dotenv==1.0.1
+pydantic==2.9.2
+pydantic-settings==2.6.1
+
+# Ingestion
+pandas==2.2.3
+pymupdf==1.24.11
+pdfplumber==0.11.4
+charset-normalizer==3.4.0
+pytesseract==0.3.13
+pillow==11.0.0
+
+# NLP / detection
+spacy==3.8.2
+
+# RAG
+faiss-cpu==1.9.0
+sentence-transformers==3.2.1
+tiktoken==0.8.0
+
+# Reporting
+markdown==3.7
+
+# Tooling / tests
+pytest==8.3.3
+ruff==0.7.1
+black==24.10.0
