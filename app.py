@@ -308,8 +308,19 @@ def main() -> None:
         st.write(f"**Embedding model:** `{settings.embedding_model}`")
         st.write(f"**OCR enabled:** {settings.enable_ocr}")
         st.write(f"**Models in rotation:** {len(settings.model_registry)}")
-        if not settings.gemini_api_key:
-            st.warning("GEMINI_API_KEY not set — LLM contextual detection disabled.")
+        if settings.enable_reranker:
+            from src.rag.reranker import get_reranker
+
+            st.write(f"**Reranker:** on — `{get_reranker().active_model}`")
+        if not settings.gemini_api_key and not settings.enable_ollama:
+            st.warning("No LLM backend configured — LLM features disabled.")
+
+        local_only = st.checkbox(
+            "🔒 Local-only (no cloud)",
+            value=settings.local_only_mode,
+            help="Force the local Ollama backend — no document text leaves this machine.",
+        )
+        get_client().set_local_only(local_only)
 
         active_id = None
         if documents:

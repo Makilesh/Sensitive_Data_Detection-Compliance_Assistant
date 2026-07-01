@@ -105,6 +105,10 @@ class Settings(BaseSettings):
     ollama_rpd: int = 100_000
     ollama_tpm: int = 10_000_000
     ollama_timeout_seconds: float = 120.0
+
+    # Privacy: when True, only the local Ollama backend is used — no document
+    # text (even masked) is sent to the cloud.
+    local_only_mode: bool = False
     rate_limit_state_file: str = ".rate_limits.json"
 
     # --- Detection ---
@@ -128,6 +132,13 @@ class Settings(BaseSettings):
     enable_hybrid_search: bool = True
     retrieval_pool: int = 20  # candidates pulled from each retriever before fusion
     rrf_k: int = 60  # RRF damping constant
+
+    # Optional cross-encoder reranker (higher precision on large docs).
+    enable_reranker: bool = False
+    reranker_model: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"  # light, CPU-ok
+    reranker_model_gpu: str = "BAAI/bge-reranker-v2-m3"  # heavier, used if CUDA
+    reranker_auto_upgrade_gpu: bool = True
+    rerank_pool: int = 20  # candidates reranked before truncating to top_k
 
     # --- Ingestion ---
     enable_ocr: bool = False
