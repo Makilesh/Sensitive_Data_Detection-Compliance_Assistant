@@ -213,3 +213,30 @@ counting matches the detector.
 downloadable report and working template fallback.
 
 **Next:** Phase 8 — redaction & sanitized export.
+
+## Phase 8 — Redaction & Sanitized Export ✅
+
+**Completed**
+- `redaction/masker.py`: generalized `redact_text(..., style)` + `replacement_for`
+  supporting "mask" (partial value; used by RAG) and "placeholder"
+  (`[REDACTED:TYPE]`); RAG path unchanged (default "mask").
+- `redaction/export.py`: `redact_txt` (always), `redact_csv` (masks offending
+  cells via the retained DataFrame), `redact_pdf` (PyMuPDF redaction annotations +
+  `apply_redactions` — deletes underlying glyphs, not just covers them).
+- UI Redaction tab: side-by-side original/redacted preview + per-format download
+  buttons (TXT always; PDF/CSV when applicable).
+- Tests (`test_redaction.py`, 4): TXT leaks no raw value + uses placeholder,
+  mask/placeholder styles, CSV cell masking with header preserved, PDF underlying
+  text truly removed (email + PAN gone after re-extraction).
+
+**Self code review outcome**
+- Confirmed true redaction (re-extracted PDF text contains no raw values).
+- CSV masking operates per-cell on raw values; header row preserved.
+- Exporters isolated in `export.py` with lazy `fitz` import so the detection path
+  stays light; all build on the single masker primitives.
+- `ruff` clean; 52 tests green; app launches with the Redaction tab.
+
+**Definition of Done:** ✅ downloadable sanitized copy per format with zero leaked
+values.
+
+**Next:** Phase 9 — audit logging & multi-document support.

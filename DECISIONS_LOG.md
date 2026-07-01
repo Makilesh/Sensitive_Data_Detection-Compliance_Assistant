@@ -74,6 +74,16 @@ minor improvements — with rationale.
 - **D18 — LLM snippets verified verbatim against source text.** Any snippet not
   found by exact substring match is discarded — concrete anti-hallucination guard.
 
+## Phase 8
+
+- **D24 — True PDF redaction via `apply_redactions()`.** Redaction annotations
+  remove the underlying glyphs, so exported PDFs cannot leak values by copy-paste
+  or re-extraction (verified by test). OCR-only pages fall back to the safe TXT
+  export since coordinates are unavailable.
+- **D25 — Exporters in `redaction/export.py`, primitives in `masker.py`.** Keeps
+  masking rules single-sourced while isolating heavy `fitz`/`pandas` usage (lazy
+  imports) from the detection path that only needs `mask_value`/`redact_text`.
+
 ## Phase 6
 
 - **D20 — Embed MASKED text only.** Chunks are redacted before embedding so raw

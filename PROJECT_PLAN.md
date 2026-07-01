@@ -19,7 +19,7 @@ Gemini free tier with a rate-limit-aware model-rotation client.
 | 5 | Risk classification | ✅ done |
 | 6 | RAG Q&A over the document | ✅ done |
 | 7 | AI compliance summary | ✅ done |
-| 8 | Redaction / masking & sanitized export | ⏳ pending |
+| 8 | Redaction / masking & sanitized export | ✅ done |
 | 9 | Audit logging & multi-document support | ⏳ pending |
 | 10 | Dockerization, deployment & documentation | ⏳ pending |
 
@@ -35,9 +35,10 @@ chart. RAG Q&A (P6) — masked sentence-aware chunking, local MiniLM embeddings,
 persisted FAISS per doc, grounded cited synthesis with refusal + deterministic
 counting; Chat tab. Compliance summary (P7) — masked brief → GDPR/DPDP/PCI-DSS
 observations + risks + remediation, deterministic template fallback; Summary tab +
-Markdown download. 48 tests green, `ruff` clean.
+Markdown download. Redaction (P8) — TXT/PDF/CSV sanitized export (PyMuPDF true
+redaction) with zero leaked values; Redaction tab. 52 tests green, `ruff` clean.
 
 ## Next Task
-Phase 8 — redaction & sanitized export: `redaction/masker.py` grows document-level
-export (redacted TXT always; redacted PDF via PyMuPDF boxes; redacted CSV cells);
-Redaction tab with side-by-side preview + downloads; assert zero leaked values.
+Phase 9 — audit logging + multi-document support: `audit.py` append-only JSONL
+(masked, PII-free) for detection runs and Q&A; multi-doc session with a document
+switcher; Audit expander in the UI.

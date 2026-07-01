@@ -45,7 +45,8 @@ Reflects the **current** implementation. Updated at the close of every phase.
 | `src/detection/llm_contextual.py` | `detect_contextual()` JSON pass with verbatim-snippet hallucination guard; skips when unconfigured/exhausted. | ✅ |
 | `src/detection/engine.py` | `run_detection()` orchestrator: compose detectors, span→page/line/column, overlap dedupe (longer+trust rank), `summarize_counts()`. | ✅ |
 | `src/classification/risk.py` | `classify_risk()`: Σ(weight×count)×density → Low/Med/High + sorted `RiskContributor` breakdown + summary. | ✅ |
-| `src/redaction/masker.py` | `mask_value()` — single source of masking rules (used by detection + P8 export). | ✅ (value masking); export P8 |
+| `src/redaction/masker.py` | `mask_value()`, `redact_text()`, `replacement_for()` — single source of masking/redaction primitives. | ✅ |
+| `src/redaction/export.py` | `redact_txt()` / `redact_csv()` / `redact_pdf()` sanitized exporters (PyMuPDF true redaction). | ✅ |
 | `src/rag/chunker.py` | `chunk_document()`: sentence units → masked, overlapping `Chunk[]` with page/line. | ✅ |
 | `src/rag/embeddings.py` | `LocalEmbedder` (cached MiniLM, normalized vectors); `get_embedder()`. | ✅ |
 | `src/rag/store.py` | `FaissStore`: IndexFlatIP over masked chunks, persisted per doc_id. | ✅ |
