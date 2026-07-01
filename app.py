@@ -1,18 +1,20 @@
 """Streamlit entrypoint.
 
 Thin UI layer only — all business logic lives in ``src/``. This module wires
-user interactions to the ingestion/detection/RAG services and renders results.
-Phase 1 ships a skeleton: title, sidebar, and a file-uploader stub (no
-processing yet).
+user interactions to the ingestion/detection/RAG services, caches per-document
+results in session state, and renders them across tabs.
 """
 
 from __future__ import annotations
 
+import pandas as pd
 import streamlit as st
 
-from src.config import get_settings
+from src.config import Settings, get_settings
+from src.detection.engine import run_detection, summarize_counts
 from src.ingestion.loaders import UnsupportedFileTypeError, load_document
 from src.llm.gemini_client import GeminiClient
+from src.models import Document, Finding
 
 
 def get_client() -> GeminiClient:
@@ -20,6 +22,15 @@ def get_client() -> GeminiClient:
     if "gemini_client" not in st.session_state:
         st.session_state["gemini_client"] = GeminiClient()
     return st.session_state["gemini_client"]
+
+
+def get_findings(document: Document, settings: Settings) -> list[Finding]:
+    """Detect (once per doc_id) and cache findings in session state."""
+    cache = st.session_state.setdefault("findings_cache", {})
+    if document.doc_id not in cache:
+        with st.spinner("Detecting sensitive data…"):
+            cache[document.doc_id] = run_detection(document, get_client(), settings)
+    return cache[document.doc_id]
 
 
 def render_quota_panel(client: GeminiClient) -> None:
@@ -34,6 +45,44 @@ def render_quota_panel(client: GeminiClient) -> None:
             f"{status} `{usage.name}` — RPM {usage.rpm_used}/{usage.rpm_limit} · "
             f"RPD {usage.rpd_used}/{usage.rpd_limit}"
         )
+
+
+def render_overview(document: Document, findings: list[Finding]) -> None:
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Format", document.file_type.upper())
+    col2.metric("Pages / segments", document.page_count)
+    col3.metric("Characters", f"{len(document.text):,}")
+    col4.metric("Sensitive findings", len(findings))
+    if document.used_ocr:
+        st.caption("ℹ️ OCR was used to extract text from a scanned page.")
+    with st.expander("Text preview", expanded=False):
+        st.text(document.text[:2000] + ("…" if len(document.text) > 2000 else ""))
+
+
+def render_findings(findings: list[Finding]) -> None:
+    if not findings:
+        st.success("No sensitive data detected.")
+        return
+
+    counts = summarize_counts(findings)
+    st.write("**Findings by type**")
+    st.bar_chart(pd.Series(counts, name="count"))
+
+    reveal = st.checkbox("Reveal raw values (handle with care)", value=False)
+    rows = [
+        {
+            "Type": f.entity_type.value,
+            "Value": f.value_raw if reveal else f.value_masked,
+            "Detector": f.detector,
+            "Confidence": round(f.confidence, 2),
+            "Page": f.page,
+            "Line": f.line,
+            "Column": f.column,
+            "Rationale": f.rationale or "",
+        }
+        for f in findings
+    ]
+    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
 
 def main() -> None:
@@ -58,7 +107,7 @@ def main() -> None:
         st.write(f"**OCR enabled:** {settings.enable_ocr}")
         st.write(f"**Models in rotation:** {len(settings.model_registry)}")
         if not settings.gemini_api_key:
-            st.warning("GEMINI_API_KEY not set — LLM features will be disabled.")
+            st.warning("GEMINI_API_KEY not set — LLM contextual detection disabled.")
         st.divider()
         render_quota_panel(get_client())
 
@@ -79,16 +128,13 @@ def main() -> None:
         return
 
     st.success(f"Loaded **{document.filename}** — `{document.doc_id}`")
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Format", document.file_type.upper())
-    col2.metric("Pages / segments", document.page_count)
-    col3.metric("Characters", f"{len(document.text):,}")
-    col4.metric("OCR used", "Yes" if document.used_ocr else "No")
+    findings = get_findings(document, settings)
 
-    with st.expander("Text preview", expanded=True):
-        st.text(document.text[:2000] + ("…" if len(document.text) > 2000 else ""))
-
-    st.info("Detection, risk, summary, chat, and redaction arrive in later phases.")
+    overview_tab, findings_tab = st.tabs(["📄 Overview", "🔍 Findings"])
+    with overview_tab:
+        render_overview(document, findings)
+    with findings_tab:
+        render_findings(findings)
 
 
 if __name__ == "__main__":
