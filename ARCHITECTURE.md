@@ -51,7 +51,7 @@ Reflects the **current** implementation. Updated at the close of every phase.
 | `src/rag/embeddings.py` | `LocalEmbedder` (cached MiniLM, normalized vectors); `get_embedder()`. | ✅ |
 | `src/rag/store.py` | `FaissStore`: IndexFlatIP over masked chunks, persisted per doc_id. | ✅ |
 | `src/rag/qa.py` | `build_index()`, `answer_question()`, `answer_corpus()` (cross-doc): counting via findings, retrieve+refuse+grounded synthesis (shared `_synthesize`), citations. | ✅ |
-| `src/llm/gemini_client.py` | `GeminiClient.generate()`: rotation, 429 failover, 5xx backoff, `AllModelsExhausted`, `LLMResult`. SDK call isolated in `_invoke_sdk`. | ✅ |
+| `src/llm/gemini_client.py` | `GeminiClient.generate()`: multi-provider rotation (Gemini → local Ollama), 429 failover, 5xx backoff, `AllModelsExhausted`, `LLMResult`. Backends isolated in `_invoke_sdk` (Gemini) / `_invoke_ollama` (stdlib urllib). | ✅ |
 | `src/llm/rate_limiter.py` | `RateLimiter`: sliding-window RPM/TPM + persisted daily RPD, atomic, injectable clock, `snapshot()` for UI. | ✅ |
 | `src/llm/prompts.py` | Shared `SYSTEM_PREAMBLE` + `with_preamble()`; task templates grow per phase. | ✅ |
 | `src/compliance.py` | `generate_summary()`: masked brief → GDPR/DPDP/PCI-DSS observations + risks + remediation; deterministic `_template_summary` fallback. | ✅ |
