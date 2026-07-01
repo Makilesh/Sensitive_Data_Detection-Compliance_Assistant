@@ -18,7 +18,7 @@ Gemini free tier with a rate-limit-aware model-rotation client.
 | 4 | Sensitive data detection engine | ✅ done |
 | 5 | Risk classification | ✅ done |
 | 6 | RAG Q&A over the document | ✅ done |
-| 7 | AI compliance summary | ⏳ pending |
+| 7 | AI compliance summary | ✅ done |
 | 8 | Redaction / masking & sanitized export | ⏳ pending |
 | 9 | Audit logging & multi-document support | ⏳ pending |
 | 10 | Dockerization, deployment & documentation | ⏳ pending |
@@ -33,10 +33,11 @@ table, and explicit reveal toggle. Risk classification (P5) — weighted score �
 density → Low/Med/High with contributor breakdown; Risk tab with colored badge +
 chart. RAG Q&A (P6) — masked sentence-aware chunking, local MiniLM embeddings,
 persisted FAISS per doc, grounded cited synthesis with refusal + deterministic
-counting; Chat tab. 43 tests green, `ruff` clean.
+counting; Chat tab. Compliance summary (P7) — masked brief → GDPR/DPDP/PCI-DSS
+observations + risks + remediation, deterministic template fallback; Summary tab +
+Markdown download. 48 tests green, `ruff` clean.
 
 ## Next Task
-Phase 7 — AI compliance summary: a generator fed a masked structured brief
-(findings + risk) that returns compliance observations (GDPR / DPDP / PCI-DSS),
-security risks, and prioritized remediation as markdown, with a deterministic
-template fallback when the LLM is unavailable; Summary tab + download.
+Phase 8 — redaction & sanitized export: `redaction/masker.py` grows document-level
+export (redacted TXT always; redacted PDF via PyMuPDF boxes; redacted CSV cells);
+Redaction tab with side-by-side preview + downloads; assert zero leaked values.

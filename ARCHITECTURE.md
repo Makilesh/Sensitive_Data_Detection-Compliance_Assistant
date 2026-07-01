@@ -53,6 +53,7 @@ Reflects the **current** implementation. Updated at the close of every phase.
 | `src/llm/gemini_client.py` | `GeminiClient.generate()`: rotation, 429 failover, 5xx backoff, `AllModelsExhausted`, `LLMResult`. SDK call isolated in `_invoke_sdk`. | ✅ |
 | `src/llm/rate_limiter.py` | `RateLimiter`: sliding-window RPM/TPM + persisted daily RPD, atomic, injectable clock, `snapshot()` for UI. | ✅ |
 | `src/llm/prompts.py` | Shared `SYSTEM_PREAMBLE` + `with_preamble()`; task templates grow per phase. | ✅ |
+| `src/compliance.py` | `generate_summary()`: masked brief → GDPR/DPDP/PCI-DSS observations + risks + remediation; deterministic `_template_summary` fallback. | ✅ |
 | `src/audit.py` | JSONL masked audit log. | stub (P9) |
 
 ## Interfaces / Contracts

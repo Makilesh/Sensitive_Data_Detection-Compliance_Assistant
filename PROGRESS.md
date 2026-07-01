@@ -187,3 +187,29 @@ explanations.
 counting matches the detector.
 
 **Next:** Phase 7 — AI compliance summary with remediation.
+
+## Phase 7 — AI Compliance Summary ✅
+
+**Completed**
+- `src/compliance.py`: `generate_summary()` builds a masked, PII-free brief (type
+  counts + risk) and asks Gemini for a 3-section Markdown report (Compliance
+  Observations w/ GDPR·DPDP·PCI-DSS, Security Risks, Recommended Remediation).
+  `_template_summary()` deterministic fallback with a per-type regulation +
+  remediation map so the feature never hard-fails.
+- `prompts.build_compliance_prompt` grounded on the brief only.
+- UI Summary tab: generate button, rendered markdown, Markdown download button;
+  cached per doc_id.
+- Tests (`test_compliance.py`, 5): template fallback structure, regulation
+  references (PCI-DSS/DPDP), empty findings, LLM-used path with masked brief
+  assertion, LLM-error → template fallback.
+
+**Self code review outcome**
+- Verified the brief passed to the LLM contains no raw values (asserted on a raw
+  card number); summary grounded strictly in detected type counts.
+- Fallback path exercised on both "no key" and "LLM raises" branches.
+- `ruff` clean; 48 tests green; app launches with the Summary tab.
+
+**Definition of Done:** ✅ one-click grounded summary referencing found types, with
+downloadable report and working template fallback.
+
+**Next:** Phase 8 — redaction & sanitized export.

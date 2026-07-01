@@ -220,8 +220,8 @@ def main() -> None:
     findings = get_findings(document, settings)
     risk = get_risk(document, findings, settings)
 
-    overview_tab, findings_tab, risk_tab, chat_tab = st.tabs(
-        ["📄 Overview", "🔍 Findings", "⚠️ Risk", "💬 Chat"]
+    overview_tab, findings_tab, risk_tab, summary_tab, chat_tab = st.tabs(
+        ["📄 Overview", "🔍 Findings", "⚠️ Risk", "📋 Summary", "💬 Chat"]
     )
     with overview_tab:
         render_overview(document, findings)
@@ -229,6 +229,8 @@ def main() -> None:
         render_findings(findings)
     with risk_tab:
         render_risk(risk)
+    with summary_tab:
+        render_summary(document, findings, risk, settings)
     with chat_tab:
         render_chat(document, findings, settings)
 
