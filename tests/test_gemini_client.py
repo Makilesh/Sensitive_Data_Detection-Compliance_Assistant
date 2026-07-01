@@ -23,8 +23,13 @@ def _client(tmp_path, clock, models=None):
         ModelSpec(name="m1", rpm=5, rpd=100, tpm=100_000),
         ModelSpec(name="m2", rpm=5, rpd=100, tpm=100_000),
     ]
-    settings = Settings(gemini_api_key="test-key", model_registry=models, llm_backoff_seconds=0.0)
-    rl = RateLimiter(models, str(tmp_path / "rl.json"), now=clock)
+    settings = Settings(
+        gemini_api_key="test-key",
+        model_registry=models,
+        llm_backoff_seconds=0.0,
+        enable_ollama=False,  # keep these unit tests Gemini-only + deterministic
+    )
+    rl = RateLimiter(settings.model_registry, str(tmp_path / "rl.json"), now=clock)
     client = GeminiClient(settings=settings, rate_limiter=rl, now=clock, sleep=lambda _s: None)
     return client, rl
 

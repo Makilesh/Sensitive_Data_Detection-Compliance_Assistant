@@ -102,7 +102,8 @@ class GeminiClient:
 
     @property
     def is_configured(self) -> bool:
-        return bool(self._settings.gemini_api_key)
+        """True if any backend (cloud Gemini or local Ollama) can serve requests."""
+        return any(self._provider_available(m) for m in self._settings.model_registry)
 
     def generate(
         self,
@@ -113,39 +114,46 @@ class GeminiClient:
     ) -> LLMResult:
         """Generate text, rotating across models on rate-limit / transient errors."""
         if not self.is_configured:
-            raise LLMUnavailableError("GEMINI_API_KEY is not set")
+            raise LLMUnavailableError(
+                "No LLM backend available (set GEMINI_API_KEY or enable Ollama)"
+            )
 
         prompt_tokens = estimate_tokens(prompt)
 
         for spec in self._settings.model_registry:
+            if not self._provider_available(spec):
+                continue
             if not self._rate_limiter.can_use(spec.name):
                 continue
-            result = self._try_model(
-                spec.name, prompt, json_mode, max_output_tokens, prompt_tokens
-            )
+            result = self._try_model(spec, prompt, json_mode, max_output_tokens, prompt_tokens)
             if result is not None:
                 return result
             # rotation was triggered (rate-limit or retries exhausted)
 
         # Nothing served the request.
         raise AllModelsExhausted(
-            "All Gemini models are rate-limited or exhausted; try again later."
+            "All LLM models (cloud + local) are rate-limited or exhausted; try again later."
         )
+
+    def _provider_available(self, spec) -> bool:
+        """Whether a model's backend is usable in this environment."""
+        if spec.provider == "ollama":
+            return self._settings.enable_ollama
+        return bool(self._settings.gemini_api_key)  # gemini
 
     def _try_model(
         self,
-        model_name: str,
+        spec,
         prompt: str,
         json_mode: bool,
         max_output_tokens: int,
         prompt_tokens: int,
     ) -> LLMResult | None:
         """Attempt one model with retry/backoff. Returns None to rotate onward."""
+        model_name = spec.name
         for attempt in range(self._settings.llm_max_retries):
             try:
-                text, response_tokens = self._invoke_sdk(
-                    model_name, prompt, json_mode, max_output_tokens
-                )
+                text, response_tokens = self._invoke(spec, prompt, json_mode, max_output_tokens)
             except Exception as exc:  # noqa: BLE001 - classified below
                 if _is_rate_limit_error(exc):
                     self._rate_limiter.mark_cooldown(model_name, self._cooldown_seconds)
@@ -162,6 +170,46 @@ class GeminiClient:
                 response_tokens=response_tokens,
             )
         return None
+
+    def _invoke(self, spec, prompt, json_mode, max_output_tokens) -> tuple[str, int]:
+        """Dispatch a generation call to the right backend by provider."""
+        if spec.provider == "ollama":
+            return self._invoke_ollama(spec.name, prompt, json_mode, max_output_tokens)
+        return self._invoke_sdk(spec.name, prompt, json_mode, max_output_tokens)
+
+    def _invoke_ollama(
+        self,
+        model_name: str,
+        prompt: str,
+        json_mode: bool,
+        max_output_tokens: int,
+    ) -> tuple[str, int]:
+        """Call a local Ollama model via its HTTP API (stdlib only)."""
+        import json as _json
+        import urllib.request
+
+        payload: dict = {
+            "model": model_name,
+            "prompt": prompt,
+            "stream": False,
+            "options": {"num_predict": max_output_tokens},
+        }
+        if json_mode:
+            payload["format"] = "json"
+
+        request = urllib.request.Request(
+            f"{self._settings.ollama_host}/api/generate",
+            data=_json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+        )
+        with urllib.request.urlopen(
+            request, timeout=self._settings.ollama_timeout_seconds
+        ) as resp:
+            data = _json.loads(resp.read().decode("utf-8"))
+
+        text = data.get("response", "") or ""
+        response_tokens = int(data.get("eval_count") or estimate_tokens(text))
+        return text, response_tokens
 
     def _invoke_sdk(
         self,
