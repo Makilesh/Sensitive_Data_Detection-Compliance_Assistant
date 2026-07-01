@@ -20,3 +20,25 @@ SYSTEM_PREAMBLE = (
 def with_preamble(task_prompt: str) -> str:
     """Prepend the shared system preamble to a task-specific prompt."""
     return f"{SYSTEM_PREAMBLE}\n\n{task_prompt}"
+
+
+# RAG Q&A: answer strictly from numbered context chunks; cite them; refuse when
+# the answer is not supported.
+QA_PROMPT_TEMPLATE = """Answer the question using ONLY the numbered context below.
+
+Rules:
+- Ground every claim in the context. Cite the chunk numbers you used like [1], [2].
+- If the context does not contain the answer, reply exactly:
+  "I don't have enough information in this document to answer that."
+- Do not use outside knowledge. Do not reveal or guess masked values.
+
+Context:
+{context}
+
+Question: {question}
+
+Answer:"""
+
+
+def build_qa_prompt(question: str, context: str) -> str:
+    return with_preamble(QA_PROMPT_TEMPLATE.format(context=context, question=question))
