@@ -51,6 +51,7 @@ Reflects the **current** implementation. Updated at the close of every phase.
 | `src/rag/embeddings.py` | `LocalEmbedder` (cached MiniLM, normalized vectors); `get_embedder()`. | ✅ |
 | `src/rag/store.py` | `FaissStore`: dense IndexFlatIP + BM25 sparse index over masked chunks (persisted per doc_id); `search()` (dense) and `search_hybrid()` (RRF fusion). | ✅ |
 | `src/rag/lexical.py` | In-house `BM25` (Okapi) + `reciprocal_rank_fusion()` — sparse retrieval, stdlib only. | ✅ |
+| `src/rag/reranker.py` | Optional `CrossEncoderReranker` (opt-in, GPU-aware model choice, graceful fallback) reorders the retrieval pool. | ✅ |
 | `src/rag/qa.py` | `build_index()`, `answer_question()`, `answer_corpus()` (cross-doc): counting via findings, retrieve+refuse+grounded synthesis (shared `_synthesize`), citations. | ✅ |
 | `src/llm/gemini_client.py` | `GeminiClient.generate()`: multi-provider rotation (Gemini → local Ollama), 429 failover, 5xx backoff, `AllModelsExhausted`, `LLMResult`. Backends isolated in `_invoke_sdk` (Gemini) / `_invoke_ollama` (stdlib urllib). | ✅ |
 | `src/llm/rate_limiter.py` | `RateLimiter`: sliding-window RPM/TPM + persisted daily RPD, atomic, injectable clock, `snapshot()` for UI. | ✅ |

@@ -74,6 +74,22 @@ minor improvements — with rationale.
 - **D18 — LLM snippets verified verbatim against source text.** Any snippet not
   found by exact substring match is discarded — concrete anti-hallucination guard.
 
+## Post-build — Optional reranker + privacy local-only mode
+
+- **D33 — Cross-encoder reranker as an opt-in, GPU-aware toggle.** Off by default so
+  the fast path is unaffected. When on, `_retrieve()` pulls a larger pool then
+  reranks with a `CrossEncoder`. Model choice is GPU-aware: lightweight
+  `ms-marco-MiniLM-L-6-v2` on CPU, auto-upgrade to `bge-reranker-v2-m3` when CUDA is
+  present (needs a CUDA torch build). Reranker only reorders — the returned score
+  stays the dense cosine, so the `rag_min_score` refusal contract is preserved
+  (verified). Loads lazily and degrades to unranked hits on any failure. No new
+  dependency (`sentence-transformers` ships `CrossEncoder`).
+- **D34 — Privacy local-only mode.** A config flag + runtime sidebar toggle that
+  makes `_provider_available()` block all cloud Gemini models, forcing the local
+  Ollama backend so no document-derived text (even masked) leaves the machine —
+  a strong compliance option for the most sensitive documents. Reuses the existing
+  provider-gating seam; `is_configured` degrades correctly if no local backend.
+
 ## Post-build — Hybrid RAG (borrowed from ma-diligence-rag-engine)
 
 - **D30 — Adopt hybrid dense+sparse retrieval with RRF.** The reference repo's
