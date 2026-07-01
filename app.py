@@ -11,6 +11,7 @@ import pandas as pd
 import streamlit as st
 
 from src.classification.risk import classify_risk
+from src.compliance import generate_summary
 from src.config import Settings, get_settings
 from src.detection.engine import run_detection, summarize_counts
 from src.ingestion.loaders import UnsupportedFileTypeError, load_document
@@ -54,6 +55,26 @@ def render_risk(report: RiskReport) -> None:
         st.write("**Contributor breakdown**")
         data = {c.entity_type.value: c.contribution for c in report.contributors}
         st.bar_chart(pd.Series(data, name="contribution"))
+
+
+def render_summary(document: Document, findings: list[Finding], risk: RiskReport, settings: Settings) -> None:
+    cache = st.session_state.setdefault("summary_cache", {})
+    if st.button("Generate compliance summary", type="primary") or document.doc_id in cache:
+        if document.doc_id not in cache:
+            with st.spinner("Generating compliance summary…"):
+                cache[document.doc_id] = generate_summary(
+                    document, findings, risk, get_client(), settings
+                )
+        summary = cache[document.doc_id]
+        st.markdown(summary)
+        st.download_button(
+            "⬇️ Download report (Markdown)",
+            data=summary,
+            file_name=f"compliance_report_{document.doc_id}.md",
+            mime="text/markdown",
+        )
+    else:
+        st.info("Click to generate a grounded compliance summary with remediation steps.")
 
 
 def get_store(document: Document, findings: list[Finding], settings: Settings):
