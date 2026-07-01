@@ -75,6 +75,9 @@ src/
   redaction/masker.py
   rag/{chunker,embeddings,store,qa}.py
   llm/{gemini_client,rate_limiter,prompts}.py
+  compliance.py
 tests/  ·  data/samples/
+Dockerfile · docker-compose.yml · .dockerignore · packages.txt · .streamlit/config.toml
+README.md · RESULTS.md · DEMO_SCRIPT.md
 PROJECT_PLAN.md · ARCHITECTURE.md · PROGRESS.md · DECISIONS_LOG.md
 ```

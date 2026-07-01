@@ -267,3 +267,33 @@ values.
 one session with a switcher + corpus mode.
 
 **Next:** Phase 10 — Docker, deployment & documentation.
+
+## Phase 10 — Dockerization, Deployment & Documentation ✅
+
+**Completed**
+- `Dockerfile` (python:3.11-slim, installs `tesseract-ocr`, deps, spaCy model,
+  healthcheck, headless Streamlit on 8501); `docker-compose.yml` (port map, env,
+  single `./runtime` volume for indexes+audit+quota state); `.dockerignore`;
+  `packages.txt` (`tesseract-ocr`) for Streamlit Cloud; `.streamlit/config.toml`.
+- `README.md` with all five MANDATORY sections: Setup, Architecture overview
+  (diagram), AI/ML approach, Challenges faced, Future improvements — plus Docker,
+  Streamlit Cloud deploy steps, and demo/deploy link placeholders.
+- `RESULTS.md`: honest evaluation — 57 tests green, golden-file precision/recall
+  1.00, invalid-Aadhaar rejection, and candid limitations.
+- `DEMO_SCRIPT.md`: 2–5 min walkthrough script.
+
+**Self code review outcome**
+- `docker compose config` validates; env vars (`SDA_INDEX_DIR`,
+  `SDA_AUDIT_LOG_FILE`, `SDA_RATE_LIMIT_STATE_FILE`) confirmed to map to settings.
+- Fixed a volume pitfall (mounting a non-existent file → dir) by routing all
+  runtime artifacts under one mounted `runtime/` directory.
+- **Honest caveat:** a full `docker build`/`compose up` could not be executed here
+  because the Docker daemon was not running; documented in RESULTS.md. Local app
+  run, tests, and lint all verified.
+
+**Definition of Done:** ⚠️ Docker/compose files complete & config-validated (build
+not run — daemon down); README has all mandatory sections; tests green, ruff clean.
+Deployment URL + demo video are user follow-ups.
+
+**Project shipped.** Remaining external steps: local docker build verification,
+Streamlit Cloud deploy + URL, demo video, verify live Gemini limits, `git push`.

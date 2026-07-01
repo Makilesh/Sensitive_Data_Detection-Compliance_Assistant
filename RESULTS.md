@@ -49,6 +49,15 @@ they demonstrate correctness of the detectors, not population-level accuracy.
 - TXT/CSV/PDF exports contain zero raw sensitive values; PDF redaction removes the
   underlying glyphs (verified by re-extracting text from the redacted PDF).
 
+## Docker / Deployment
+- `Dockerfile`, `docker-compose.yml`, `.dockerignore`, and `packages.txt` are
+  provided. `docker compose config` validates successfully.
+- **Not verified on the build machine:** a full `docker build` / `docker compose
+  up` was not executed here because the Docker daemon was not running in the
+  build environment. Run `docker compose up --build` locally to confirm.
+- Streamlit Community Cloud deployment steps are documented in the README; the
+  live URL must be filled in after deployment.
+
 ## Known Limitations
 - **Model registry values are placeholders.** Free-tier RPM/TPM/RPD change often;
   verify at the Google rate-limits page before relying on them.
