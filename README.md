@@ -140,10 +140,13 @@ AI, using each where it is strongest:
    snippet **verified verbatim** against the source (hallucination guard).
 4. **Explainable risk scoring** — `Σ(severity_weight × count) × density` → Low /
    Medium / High with a contributor breakdown.
-5. **Local-embedding RAG** — `sentence-transformers` (all-MiniLM-L6-v2) over
-   **masked** chunks stored in FAISS; Gemini synthesizes a grounded, cited answer
-   or **refuses** when retrieval is weak. Counting questions ("how many emails?")
-   are answered from the deterministic findings, not the LLM.
+5. **Hybrid local-embedding RAG** — `sentence-transformers` (all-MiniLM-L6-v2)
+   over **masked** chunks in FAISS, **fused with an in-house BM25 sparse index via
+   Reciprocal Rank Fusion** so exact-token queries (e.g. "IFSC", "employee id")
+   are recalled alongside semantic ones. Gemini synthesizes a grounded, cited
+   answer or **refuses** when retrieval is weak (absolute cosine floor). Counting
+   questions ("how many emails?") are answered from the deterministic findings,
+   not the LLM. (Hybrid toggle: `SDA_ENABLE_HYBRID_SEARCH`.)
 6. **Rate-limit-aware model rotation + local fallback** — a registry of free-tier
    Gemini models (led by high-throughput flash tiers) with per-model RPM/TPM/RPD
    tracking; on a 429 the client cools that model down and rotates to the next,

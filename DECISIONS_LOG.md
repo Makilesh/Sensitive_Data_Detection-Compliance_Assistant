@@ -74,6 +74,25 @@ minor improvements — with rationale.
 - **D18 — LLM snippets verified verbatim against source text.** Any snippet not
   found by exact substring match is discarded — concrete anti-hallucination guard.
 
+## Post-build — Hybrid RAG (borrowed from ma-diligence-rag-engine)
+
+- **D30 — Adopt hybrid dense+sparse retrieval with RRF.** The reference repo's
+  flagship RAG technique. Added an in-house Okapi `BM25` + `reciprocal_rank_fusion`
+  (`src/rag/lexical.py`, stdlib only — no new dependency) and `FaissStore.
+  search_hybrid()`. Rationale: exact tokens (field labels like "IFSC", "employee
+  id", "password") are matched by BM25 while embeddings handle semantics — directly
+  relevant to sensitive-data docs. BM25 is rebuilt from persisted chunk text on
+  load (no extra files). Toggle: `enable_hybrid_search`.
+- **D31 — Preserve the cosine-based grounding contract under hybrid.** RRF sets the
+  *ordering*, but the returned score stays the absolute dense cosine, so the
+  `rag_min_score` refusal gate keeps its meaning and out-of-scope questions still
+  refuse (verified by test).
+- **D32 — Deliberately did NOT adopt** the reference's cross-encoder reranker
+  (bge-reranker-v2-m3), bge-m3 1024-d embeddings, parent-child expansion, or the
+  LangGraph/Qdrant/query-rewrite machinery. Rationale: heavy models + latency +
+  VRAM for marginal gain on short compliance docs; MiniLM + hybrid + refusal is
+  the right cost/quality point for this app. These remain easy future add-ons.
+
 ## Post-build — Model registry update + local Ollama fallback
 
 - **D28 — Refreshed Gemini registry to user-provided current free-tier models.**

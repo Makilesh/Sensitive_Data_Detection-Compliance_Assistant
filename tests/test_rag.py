@@ -90,6 +90,31 @@ def test_grounded_answer_has_citations(tmp_path) -> None:
     assert result.model_used == "fake-model"
 
 
+def test_hybrid_search_surfaces_exact_term_chunk(tmp_path) -> None:
+    doc = _doc()
+    findings = _findings(doc)
+    # Small chunks so entities land in separate chunks.
+    settings = Settings(index_dir=str(tmp_path / "idx"), chunk_size_tokens=12)
+    store = qa.build_index(doc, findings, settings=settings)
+    embedder = get_embedder()
+    hits = store.search_hybrid("IFSC bank code", embedder.embed_one("IFSC bank code"), k=3)
+    assert hits, "hybrid search should return candidates"
+    assert any("IFSC" in c.text for c, _ in hits), "BM25 should surface the IFSC chunk"
+
+
+def test_hybrid_out_of_scope_still_refuses(tmp_path) -> None:
+    doc = _doc()
+    findings = _findings(doc)
+    settings = Settings(
+        index_dir=str(tmp_path / "idx"), rag_min_score=0.99, enable_hybrid_search=True
+    )
+    store = qa.build_index(doc, findings, settings=settings)
+    result = qa.answer_question(
+        "What is the boiling point of helium?", doc, findings, None, store, settings=settings
+    )
+    assert not result.grounded
+
+
 def test_corpus_counting_sums_across_documents(tmp_path) -> None:
     doc = _doc()
     findings = _findings(doc)
