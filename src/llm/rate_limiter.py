@@ -40,6 +40,7 @@ class ModelUsage:
     """Read-only snapshot of a model's usage for the UI."""
 
     name: str
+    provider: str
     rpm_used: int
     rpm_limit: int
     tpm_used: int
@@ -184,6 +185,7 @@ class RateLimiter:
                 out.append(
                     ModelUsage(
                         name=name,
+                        provider=spec.provider,
                         rpm_used=len(window.request_times),
                         rpm_limit=spec.rpm,
                         tpm_used=sum(tok for _, tok in window.token_events),

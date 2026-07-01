@@ -17,6 +17,12 @@ tier** with a rate-limit-aware model-rotation engine.
 - Python 3.11+
 - A free Gemini API key — https://aistudio.google.com/app/apikey
 - (Optional) Tesseract OCR for scanned PDFs — https://github.com/tesseract-ocr/tesseract
+- (Optional) [Ollama](https://ollama.com) for the local LLM fallback:
+  ```bash
+  ollama pull qwen2.5:14b     # ~9GB, fits a 12GB-VRAM GPU; strong at JSON/extraction
+  ```
+  Toggle/point it via `SDA_ENABLE_OLLAMA`, `SDA_OLLAMA_MODEL`, `SDA_OLLAMA_HOST`.
+  With Ollama enabled you can run the app **without** a Gemini key.
 
 ### Local install
 ```bash
@@ -138,9 +144,12 @@ AI, using each where it is strongest:
    **masked** chunks stored in FAISS; Gemini synthesizes a grounded, cited answer
    or **refuses** when retrieval is weak. Counting questions ("how many emails?")
    are answered from the deterministic findings, not the LLM.
-6. **Rate-limit-aware model rotation** — a registry of free-tier Gemini models
-   with per-model RPM/TPM/RPD tracking; on a 429 the client cools that model down
-   and rotates to the next, retrying transient 5xx with backoff.
+6. **Rate-limit-aware model rotation + local fallback** — a registry of free-tier
+   Gemini models (led by high-throughput flash tiers) with per-model RPM/TPM/RPD
+   tracking; on a 429 the client cools that model down and rotates to the next,
+   retrying transient 5xx with backoff. When all cloud models are exhausted it
+   falls through to a **local Ollama model** (default `qwen2.5:14b`), so the app
+   keeps working with **zero quota** — and runs fully offline if no key is set.
 
 **Privacy by default:** raw sensitive values never enter logs, the vector index,
 or the UI unless the user explicitly clicks "reveal".

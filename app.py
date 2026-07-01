@@ -208,10 +208,13 @@ def render_quota_panel(client: GeminiClient) -> None:
         st.caption(f"Last call served by **{last}**")
     for usage in client.rate_limiter.snapshot():
         status = "🟢" if usage.available else ("🟡" if usage.cooling_down else "🔴")
-        st.write(
-            f"{status} `{usage.name}` — RPM {usage.rpm_used}/{usage.rpm_limit} · "
-            f"RPD {usage.rpd_used}/{usage.rpd_limit}"
-        )
+        if usage.provider == "ollama":
+            st.write(f"{status} `{usage.name}` — 💻 local (unlimited)")
+        else:
+            st.write(
+                f"{status} `{usage.name}` — RPM {usage.rpm_used}/{usage.rpm_limit} · "
+                f"RPD {usage.rpd_used}/{usage.rpd_limit}"
+            )
 
 
 def render_audit(settings: Settings) -> None:

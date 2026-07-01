@@ -74,6 +74,25 @@ minor improvements — with rationale.
 - **D18 — LLM snippets verified verbatim against source text.** Any snippet not
   found by exact substring match is discarded — concrete anti-hallucination guard.
 
+## Post-build — Model registry update + local Ollama fallback
+
+- **D28 — Refreshed Gemini registry to user-provided current free-tier models.**
+  Priority order tuned for this workload (JSON extraction + RAG synthesis):
+  `gemini-3.5-flash` (10 RPM / 1500 RPD) → `gemini-3.1-flash-lite` (15/1000) →
+  `gemini-2.5-flash` (10/250) → `gemini-3.1-pro-preview` (5/100) →
+  `gemini-2.5-pro` (5/100). Lead with high-RPD flash tiers to survive limits; keep
+  pro tiers as mid fallbacks. Values still to be re-verified at the rate-limits URL.
+- **D29 — Local Ollama as the final, quota-free rotation fallback.** Added a
+  `provider` field to `ModelSpec`; `Settings` appends an Ollama entry
+  (default `qwen2.5:14b`) to the single `model_registry` so the rotation loop stays
+  uniform (cloud first, local last). `ModelSpec` chosen for a 12GB-VRAM GPU
+  (RTX 5070 Ti): qwen2.5:14b (~9GB Q4) has strong instruction-following/JSON;
+  reasoning models (deepseek-r1) and >12GB models (gpt-oss:20b) were rejected as
+  poorer fits for clean structured output / VRAM budget. The client dispatches by
+  provider (`_invoke_ollama` uses stdlib `urllib`, no new dependency) and
+  `is_configured` is true if *any* backend (Gemini key or Ollama) is available —
+  so the app runs fully offline with no Gemini key.
+
 ## Phase 9
 
 - **D26 — Hash questions in the audit log.** User questions may themselves contain
