@@ -42,3 +42,31 @@ Answer:"""
 
 def build_qa_prompt(question: str, context: str) -> str:
     return with_preamble(QA_PROMPT_TEMPLATE.format(context=context, question=question))
+
+
+# Compliance summary: grounded in the provided (masked) findings brief only.
+COMPLIANCE_PROMPT_TEMPLATE = """You are given a masked summary of sensitive data \
+detected in a document. Produce a concise compliance report in Markdown with \
+exactly these three sections:
+
+## Compliance Observations
+Reference relevant regulations (GDPR, India DPDP Act 2023, PCI-DSS) only where the \
+detected data types make them applicable.
+
+## Security Risks
+Concrete risks implied by the detected data.
+
+## Recommended Remediation
+Prioritized, actionable steps (most critical first).
+
+Rules:
+- Use ONLY the detected types and counts below. Do not invent specific values,
+  names, or numbers beyond what is provided.
+- If a data type is not listed, do not claim it was found.
+
+DETECTION BRIEF:
+{brief}"""
+
+
+def build_compliance_prompt(brief: str) -> str:
+    return with_preamble(COMPLIANCE_PROMPT_TEMPLATE.format(brief=brief))
