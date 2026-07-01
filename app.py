@@ -12,6 +12,28 @@ import streamlit as st
 
 from src.config import get_settings
 from src.ingestion.loaders import UnsupportedFileTypeError, load_document
+from src.llm.gemini_client import GeminiClient
+
+
+def get_client() -> GeminiClient:
+    """Return the session-scoped Gemini client (persists quota across reruns)."""
+    if "gemini_client" not in st.session_state:
+        st.session_state["gemini_client"] = GeminiClient()
+    return st.session_state["gemini_client"]
+
+
+def render_quota_panel(client: GeminiClient) -> None:
+    """Render live per-model RPM/RPD usage in the sidebar."""
+    st.subheader("Gemini model rotation")
+    last = st.session_state.get("last_model_used")
+    if last:
+        st.caption(f"Last call served by **{last}**")
+    for usage in client.rate_limiter.snapshot():
+        status = "🟢" if usage.available else ("🟡" if usage.cooling_down else "🔴")
+        st.write(
+            f"{status} `{usage.name}` — RPM {usage.rpm_used}/{usage.rpm_limit} · "
+            f"RPD {usage.rpd_used}/{usage.rpd_limit}"
+        )
 
 
 def main() -> None:
@@ -37,6 +59,8 @@ def main() -> None:
         st.write(f"**Models in rotation:** {len(settings.model_registry)}")
         if not settings.gemini_api_key:
             st.warning("GEMINI_API_KEY not set — LLM features will be disabled.")
+        st.divider()
+        render_quota_panel(get_client())
 
     uploaded = st.file_uploader(
         "Upload a document",
