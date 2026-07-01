@@ -16,6 +16,7 @@ env/
 *.jsonl
 data/indexes/
 data/cache/
+runtime/
 .rate_limits.json
 
 # OS / editor

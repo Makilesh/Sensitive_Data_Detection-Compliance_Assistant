@@ -8,8 +8,11 @@ services:
       # Set GEMINI_API_KEY in your shell or a .env file next to this compose file.
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - SDA_ENABLE_OCR=${SDA_ENABLE_OCR:-true}
+      # Keep persisted artifacts under a single mounted directory.
+      - SDA_INDEX_DIR=/app/runtime/indexes
+      - SDA_AUDIT_LOG_FILE=/app/runtime/audit_log.jsonl
+      - SDA_RATE_LIMIT_STATE_FILE=/app/runtime/.rate_limits.json
     volumes:
-      # Persist RAG indexes and the audit log across restarts.
-      - ./data/indexes:/app/data/indexes
-      - ./audit_log.jsonl:/app/audit_log.jsonl
+      # Persist RAG indexes, audit log, and quota state across restarts.
+      - ./runtime:/app/runtime
     restart: unless-stopped
