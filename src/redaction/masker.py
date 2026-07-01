@@ -8,7 +8,7 @@ layers.
 
 from __future__ import annotations
 
-from src.models import EntityType
+from src.models import EntityType, Finding
 
 # Entity types that must be fully masked (never reveal any part).
 _FULLY_MASKED: frozenset[EntityType] = frozenset(
@@ -60,3 +60,21 @@ def mask_value(entity_type: EntityType, raw: str) -> str:
     if len(raw) <= 2:
         return "*" * len(raw)
     return f"{raw[0]}{'*' * (len(raw) - 2)}{raw[-1]}"
+
+
+def redact_text(text: str, findings: list[Finding], base_offset: int = 0) -> str:
+    """Replace each finding's span in ``text`` with its masked value.
+
+    ``base_offset`` is the absolute char offset of ``text`` within the document,
+    so a segment can be redacted using document-relative finding spans. Spans are
+    applied right-to-left so earlier offsets stay valid. This is the single
+    document-level redaction primitive, reused by RAG (P6) and export (P8).
+    """
+    length = len(text)
+    spans = sorted(findings, key=lambda f: f.start, reverse=True)
+    for finding in spans:
+        start = finding.start - base_offset
+        end = finding.end - base_offset
+        if 0 <= start < end <= length:
+            text = text[:start] + finding.value_masked + text[end:]
+    return text
