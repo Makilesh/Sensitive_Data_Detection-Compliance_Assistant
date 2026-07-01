@@ -46,10 +46,10 @@ Reflects the **current** implementation. Updated at the close of every phase.
 | `src/detection/engine.py` | `run_detection()` orchestrator: compose detectors, span→page/line/column, overlap dedupe (longer+trust rank), `summarize_counts()`. | ✅ |
 | `src/classification/risk.py` | `classify_risk()`: Σ(weight×count)×density → Low/Med/High + sorted `RiskContributor` breakdown + summary. | ✅ |
 | `src/redaction/masker.py` | `mask_value()` — single source of masking rules (used by detection + P8 export). | ✅ (value masking); export P8 |
-| `src/rag/chunker.py` | Sentence-aware chunking. | stub (P6) |
-| `src/rag/embeddings.py` | Local sentence-transformers embedder. | stub (P6) |
-| `src/rag/store.py` | FAISS per-document index. | stub (P6) |
-| `src/rag/qa.py` | Retrieve + synthesize + cite. | stub (P6) |
+| `src/rag/chunker.py` | `chunk_document()`: sentence units → masked, overlapping `Chunk[]` with page/line. | ✅ |
+| `src/rag/embeddings.py` | `LocalEmbedder` (cached MiniLM, normalized vectors); `get_embedder()`. | ✅ |
+| `src/rag/store.py` | `FaissStore`: IndexFlatIP over masked chunks, persisted per doc_id. | ✅ |
+| `src/rag/qa.py` | `build_index()` + `answer_question()`: counting via findings, retrieve+refuse+grounded synthesis, citations. | ✅ |
 | `src/llm/gemini_client.py` | `GeminiClient.generate()`: rotation, 429 failover, 5xx backoff, `AllModelsExhausted`, `LLMResult`. SDK call isolated in `_invoke_sdk`. | ✅ |
 | `src/llm/rate_limiter.py` | `RateLimiter`: sliding-window RPM/TPM + persisted daily RPD, atomic, injectable clock, `snapshot()` for UI. | ✅ |
 | `src/llm/prompts.py` | Shared `SYSTEM_PREAMBLE` + `with_preamble()`; task templates grow per phase. | ✅ |

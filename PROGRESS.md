@@ -155,3 +155,35 @@ contextual); checksum validation on Aadhaar/card; exact golden counts.
 explanations.
 
 **Next:** Phase 6 — cited RAG question answering.
+
+## Phase 6 — RAG Q&A ✅
+
+**Completed**
+- `redaction/masker.redact_text()`: single document-level span-redaction primitive
+  (reused by RAG + P8 export).
+- `rag/chunker.py`: sentence-unit splitting preserving page/line, greedy packing
+  to ~500 tokens with ~10% overlap; each chunk redacted before emission.
+- `rag/embeddings.py`: cached `LocalEmbedder` (MiniLM, normalized) — indexing uses
+  no Gemini quota; `get_embedder()` shared singleton.
+- `rag/store.py`: `FaissStore` IndexFlatIP over masked chunks, persisted per
+  doc_id (`.faiss` + `.json`) so re-uploads are instant.
+- `rag/qa.py`: `build_index()` and `answer_question()`. Counting questions answered
+  from deterministic findings; free-text retrieves top-k, refuses below cosine
+  floor (`rag_min_score`), else grounded Gemini synthesis with page/line citations;
+  degrades to surfacing masked context when the LLM is unavailable/exhausted.
+- `prompts.build_qa_prompt` + config `rag_min_score`.
+- UI Chat tab: chat history per doc, answer + citations expander + non-grounded
+  warning; records last model used into the sidebar panel.
+- Tests (`test_rag.py`, 5): chunks contain no raw PII, counting via findings,
+  out-of-scope refusal, grounded answer has citations, index persist+reload.
+
+**Self code review outcome**
+- Verified no raw values reach chunks/index (asserted on AWS key + email).
+- Refusal path returns `grounded=False` and drops citations; degrade path keeps
+  masked context only. Index cached on disk by doc hash (deterministic findings).
+- `ruff` clean; 43 tests green; app launches with the Chat tab.
+
+**Definition of Done:** ✅ grounded cited answers; refuses when unsupported;
+counting matches the detector.
+
+**Next:** Phase 7 — AI compliance summary with remediation.

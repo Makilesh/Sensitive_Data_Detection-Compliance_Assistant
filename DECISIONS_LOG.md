@@ -74,6 +74,20 @@ minor improvements — with rationale.
 - **D18 — LLM snippets verified verbatim against source text.** Any snippet not
   found by exact substring match is discarded — concrete anti-hallucination guard.
 
+## Phase 6
+
+- **D20 — Embed MASKED text only.** Chunks are redacted before embedding so raw
+  PII never enters the vector store or disk. Segment-level redaction preserves
+  page/line metadata for citations.
+- **D21 — Local sentence-transformers for embeddings.** Keeps RAG indexing off the
+  Gemini free-tier quota (which is reserved for synthesis/contextual detection).
+- **D22 — Counting questions answered from deterministic findings.** "How many
+  emails?" must equal the detector, so it bypasses the LLM entirely; the LLM only
+  phrases free-text answers.
+- **D23 — Cosine-floor refusal + persisted FAISS keyed by doc hash.** Retrieval
+  below `rag_min_score` triggers an explicit "not enough information" refusal
+  (no guessing); indexes persist per doc_id for instant re-uploads.
+
 ## Phase 5
 
 - **D19 — Mild, thresholded density factor.** `1 + 0.1·max(0, findings/pages − 3)`

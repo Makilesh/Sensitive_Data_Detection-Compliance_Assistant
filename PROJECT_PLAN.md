@@ -17,7 +17,7 @@ Gemini free tier with a rate-limit-aware model-rotation client.
 | 3 | Gemini model-rotation client (rate-limit engine) | ✅ done |
 | 4 | Sensitive data detection engine | ✅ done |
 | 5 | Risk classification | ✅ done |
-| 6 | RAG Q&A over the document | ⏳ pending |
+| 6 | RAG Q&A over the document | ✅ done |
 | 7 | AI compliance summary | ⏳ pending |
 | 8 | Redaction / masking & sanitized export | ⏳ pending |
 | 9 | Audit logging & multi-document support | ⏳ pending |
@@ -31,11 +31,12 @@ verbatim-snippet hallucination guard), orchestrator with span→page/line mappin
 overlap dedupe, and immediate masking; Findings tab with per-type chart, masked
 table, and explicit reveal toggle. Risk classification (P5) — weighted score ×
 density → Low/Med/High with contributor breakdown; Risk tab with colored badge +
-chart. 38 tests green, `ruff` clean.
+chart. RAG Q&A (P6) — masked sentence-aware chunking, local MiniLM embeddings,
+persisted FAISS per doc, grounded cited synthesis with refusal + deterministic
+counting; Chat tab. 43 tests green, `ruff` clean.
 
 ## Next Task
-Phase 6 — RAG Q&A: `rag/chunker.py` (sentence-aware, metadata-carrying),
-`rag/embeddings.py` (local sentence-transformers on MASKED text),
-`rag/store.py` (FAISS per doc_id, persisted), `rag/qa.py` (retrieve → grounded
-Gemini synthesis + citations + refusal; counting Qs from deterministic findings);
-Chat tab.
+Phase 7 — AI compliance summary: a generator fed a masked structured brief
+(findings + risk) that returns compliance observations (GDPR / DPDP / PCI-DSS),
+security risks, and prioritized remediation as markdown, with a deterministic
+template fallback when the LLM is unavailable; Summary tab + download.

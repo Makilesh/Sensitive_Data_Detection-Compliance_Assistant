@@ -56,6 +56,51 @@ def render_risk(report: RiskReport) -> None:
         st.bar_chart(pd.Series(data, name="contribution"))
 
 
+def get_store(document: Document, findings: list[Finding], settings: Settings):
+    """Build/load and cache the RAG index for the document."""
+    cache = st.session_state.setdefault("store_cache", {})
+    if document.doc_id not in cache:
+        with st.spinner("Building search index…"):
+            cache[document.doc_id] = build_index(document, findings, settings=settings)
+    return cache[document.doc_id]
+
+
+def render_chat(document: Document, findings: list[Finding], settings: Settings) -> None:
+    st.caption(
+        "Ask about the document. Answers are grounded in retrieved context and "
+        "cite their sources; counting questions use the deterministic findings."
+    )
+    histories = st.session_state.setdefault("chat_histories", {})
+    history = histories.setdefault(document.doc_id, [])
+
+    for msg in history:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+    question = st.chat_input("e.g. What sensitive data exists in the document?")
+    if not question:
+        return
+
+    history.append({"role": "user", "content": question})
+    with st.chat_message("user"):
+        st.markdown(question)
+
+    store = get_store(document, findings, settings)
+    with st.chat_message("assistant"), st.spinner("Thinking…"):
+        result = answer_question(question, document, findings, get_client(), store, settings=settings)
+        if result.model_used:
+            st.session_state["last_model_used"] = result.model_used
+        st.markdown(result.answer)
+        if not result.grounded:
+            st.caption("⚠️ Not grounded — insufficient supporting context.")
+        if result.citations:
+            with st.expander(f"Citations ({len(result.citations)})"):
+                for cit in result.citations:
+                    loc = f"page {cit.page}, line {cit.line}"
+                    st.markdown(f"- **[{cit.chunk_id}]** ({loc}) — {cit.snippet}")
+    history.append({"role": "assistant", "content": result.answer})
+
+
 def render_quota_panel(client: GeminiClient) -> None:
     """Render live per-model RPM/RPD usage in the sidebar."""
     st.subheader("Gemini model rotation")
@@ -154,8 +199,8 @@ def main() -> None:
     findings = get_findings(document, settings)
     risk = get_risk(document, findings, settings)
 
-    overview_tab, findings_tab, risk_tab = st.tabs(
-        ["📄 Overview", "🔍 Findings", "⚠️ Risk"]
+    overview_tab, findings_tab, risk_tab, chat_tab = st.tabs(
+        ["📄 Overview", "🔍 Findings", "⚠️ Risk", "💬 Chat"]
     )
     with overview_tab:
         render_overview(document, findings)
@@ -163,6 +208,8 @@ def main() -> None:
         render_findings(findings)
     with risk_tab:
         render_risk(risk)
+    with chat_tab:
+        render_chat(document, findings, settings)
 
 
 if __name__ == "__main__":
