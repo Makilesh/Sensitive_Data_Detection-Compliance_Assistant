@@ -124,6 +124,10 @@ class Settings(BaseSettings):
     retrieval_top_k: int = 5
     rag_min_score: float = 0.25  # cosine floor below which Q&A refuses
     index_dir: str = "data/indexes"
+    # Hybrid retrieval: fuse dense (FAISS) + sparse (BM25) via RRF.
+    enable_hybrid_search: bool = True
+    retrieval_pool: int = 20  # candidates pulled from each retriever before fusion
+    rrf_k: int = 60  # RRF damping constant
 
     # --- Ingestion ---
     enable_ocr: bool = False
