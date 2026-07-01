@@ -1,0 +1,15 @@
+services:
+  app:
+    build: .
+    image: sensitive-data-assistant:latest
+    ports:
+      - "8501:8501"
+    environment:
+      # Set GEMINI_API_KEY in your shell or a .env file next to this compose file.
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - SDA_ENABLE_OCR=${SDA_ENABLE_OCR:-true}
+    volumes:
+      # Persist RAG indexes and the audit log across restarts.
+      - ./data/indexes:/app/data/indexes
+      - ./audit_log.jsonl:/app/audit_log.jsonl
+    restart: unless-stopped
