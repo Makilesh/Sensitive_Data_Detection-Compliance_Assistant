@@ -40,12 +40,12 @@ Reflects the **current** implementation. Updated at the close of every phase.
 | `src/models.py` | Shared data contracts: `Document`, `Segment`, `Finding`, `RiskReport`, `RiskContributor`, `Citation`, `QAResult`, `EntityType`, `RiskLevel`. | ✅ |
 | `src/ingestion/loaders.py` | `load_document()` dispatch: PDF (PyMuPDF page-by-page), TXT (charset-normalizer, per-line), CSV (pandas, row segments + DataFrame in metadata). | ✅ |
 | `src/ingestion/ocr.py` | `needs_ocr()` heuristic + `ocr_pdf_page()` (lazy pytesseract). | ✅ |
-| `src/detection/patterns.py` | Regex + Verhoeff/Luhn/IFSC validators → `Finding`. | stub (P4) |
-| `src/detection/ner.py` | spaCy NER pass. | stub (P4) |
-| `src/detection/llm_contextual.py` | LLM confidential-info pass. | stub (P4) |
-| `src/detection/engine.py` | Orchestrate detectors, dedupe, mask. | stub (P4) |
+| `src/detection/patterns.py` | Verhoeff/Luhn/IFSC + `PATTERN_SPECS` registry → `detect_patterns()`; card-network id; config-driven employee-id pattern. | ✅ |
+| `src/detection/ner.py` | Lazy spaCy PERSON/ORG/LOCATION, graceful `[]`. | ✅ |
+| `src/detection/llm_contextual.py` | `detect_contextual()` JSON pass with verbatim-snippet hallucination guard; skips when unconfigured/exhausted. | ✅ |
+| `src/detection/engine.py` | `run_detection()` orchestrator: compose detectors, span→page/line/column, overlap dedupe (longer+trust rank), `summarize_counts()`. | ✅ |
 | `src/classification/risk.py` | Weighted risk scoring. | stub (P5) |
-| `src/redaction/masker.py` | Mask/redact + sanitized export. | stub (P8) |
+| `src/redaction/masker.py` | `mask_value()` — single source of masking rules (used by detection + P8 export). | ✅ (value masking); export P8 |
 | `src/rag/chunker.py` | Sentence-aware chunking. | stub (P6) |
 | `src/rag/embeddings.py` | Local sentence-transformers embedder. | stub (P6) |
 | `src/rag/store.py` | FAISS per-document index. | stub (P6) |

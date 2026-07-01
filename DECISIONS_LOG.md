@@ -56,3 +56,20 @@ minor improvements — with rationale.
   available` is exposed for optional short waits/UI but not used to block.
 - **D13 — Error classification by status code + class name + message.** Robust to
   the SDK not being importable in tests and to message-only rate-limit signals.
+
+## Phase 4
+
+- **D14 — Masking centralized in `redaction/masker.mask_value`.** Detection imports
+  it so masking rules exist in exactly one place (reused by P8 export). Coupling
+  detection→redaction is acceptable; both only depend on `models`.
+- **D15 — Low base confidence + checksum boost for Aadhaar/card.** Regex-only
+  matches score 0.4; a passing Verhoeff/Luhn raises to 0.99. Encodes that the
+  checksum, not the regex, is what makes these trustworthy.
+- **D16 (minor, auto-applied) — Global "reveal" checkbox instead of per-row
+  toggle.** Cleaner in Streamlit and identical privacy guarantee (masked by
+  default, explicit opt-in). Spec suggested per-row; deviation noted here.
+- **D17 — Overlap dedupe by (span length, detector trust, confidence).** Ensures a
+  real card is not shadowed by a coincidental Aadhaar/LLM span; deterministic
+  detectors outrank NER/LLM on ties.
+- **D18 — LLM snippets verified verbatim against source text.** Any snippet not
+  found by exact substring match is discarded — concrete anti-hallucination guard.

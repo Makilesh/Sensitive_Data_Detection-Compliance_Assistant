@@ -91,3 +91,41 @@ on the scanned sample.
 per-model quota.
 
 **Next:** Phase 4 — deterministic + contextual detection engine.
+
+## Phase 4 — Sensitive Data Detection Engine ✅
+
+**Completed**
+- `redaction/masker.py`: `mask_value()` — single masking source (email partial,
+  last-4 for numeric IDs, full mask for keys/passwords), used at detection time.
+- `detection/patterns.py`: Verhoeff (Aadhaar) + Luhn (card) validators, card
+  network id, and a `PATTERN_SPECS` registry covering Email, Aadhaar, PAN, Phone,
+  Credit Card, IFSC, Bank Account (keyword-proximity), API keys (AWS/OpenAI/
+  GitHub/JWT/assigned-secret), Password, and config-driven Employee ID.
+- `detection/ner.py`: lazy-cached spaCy `en_core_web_sm` → PERSON/ORG/LOCATION,
+  degrades to `[]` if the model is missing.
+- `detection/llm_contextual.py`: Gemini JSON pass for confidential business info;
+  every returned snippet must exist verbatim in the text or is dropped
+  (hallucination guard); skips cleanly when unconfigured/exhausted.
+- `detection/engine.py`: `run_detection()` composes all detectors, maps char
+  spans → page/line/column via segments, dedupes overlaps (longer span, then
+  detector trust rank, then confidence), `summarize_counts()`.
+- `data/samples/golden.txt`: planted PII incl. a checksum-INVALID Aadhaar.
+- UI: tabbed layout (Overview + Findings); per-type bar chart, masked table,
+  explicit "reveal raw values" checkbox; findings cached per doc_id.
+- Tests (`test_detection.py`, 10): checksum accept/reject, exact golden counts,
+  invalid-Aadhaar rejection, masking, overlap dedupe, line metadata, NER,
+  contextual verify-vs-drop, unconfigured skip.
+
+**Self code review outcome**
+- Verified checksums prevent cross-matches: 12-digit account# is not matched by
+  the card regex (needs ≥13 digits) and the invalid Aadhaar is checksum-rejected.
+- Confirmed raw values live only in `Finding.value_raw`; all default UI/table
+  surfaces use `value_masked`; reveal is an explicit opt-in.
+- Minor UX decision: global "reveal" checkbox instead of per-row toggle (cleaner
+  in Streamlit, same privacy guarantee) — logged in DECISIONS_LOG (D16).
+- `ruff` clean; 32 tests green; app launches with Findings tab.
+
+**Definition of Done:** ✅ all 9 categories detected (8 deterministic + LLM
+contextual); checksum validation on Aadhaar/card; exact golden counts.
+
+**Next:** Phase 5 — explainable risk classification.
