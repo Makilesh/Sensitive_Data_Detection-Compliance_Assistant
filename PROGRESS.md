@@ -129,3 +129,29 @@ per-model quota.
 contextual); checksum validation on Aadhaar/card; exact golden counts.
 
 **Next:** Phase 5 — explainable risk classification.
+
+## Phase 5 — Risk Classification ✅
+
+**Completed**
+- `classification/risk.py`: `classify_risk(findings, page_count, settings)` →
+  `RiskReport`. Score = Σ(severity_weight×count) × density_factor
+  (`1 + 0.1·max(0, findings_per_page−3)`), banded by config thresholds
+  (Medium ≥ 10, High ≥ 30). Sorted `RiskContributor` breakdown + human summary.
+- Recalibrated thresholds (Medium 10 / High 30) so a single critical entity
+  (e.g. one Aadhaar) lands at ≥ Medium while a lone email stays Low.
+- UI Risk tab: colored badge (green/orange/red), score metric, summary, and a
+  contributor bar chart. Risk cached per doc_id.
+- Tests (`test_risk.py`, 6): empty→Low, email→Low, Aadhaar→Medium, three
+  criticals→High, contributor sort order, density bump on dense docs.
+
+**Self code review outcome**
+- Confirmed determinism: same findings always yield the same level; all thresholds
+  and weights sourced from `config.py` (single source).
+- Density factor calibrated to not disturb small test sets (kicks in only at
+  concentration > 3) — logged as D19.
+- `ruff` clean; 38 tests green; app launches with the Risk tab.
+
+**Definition of Done:** ✅ synthetic sets yield Low/Med/High deterministically with
+explanations.
+
+**Next:** Phase 6 — cited RAG question answering.

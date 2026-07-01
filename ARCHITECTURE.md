@@ -44,7 +44,7 @@ Reflects the **current** implementation. Updated at the close of every phase.
 | `src/detection/ner.py` | Lazy spaCy PERSON/ORG/LOCATION, graceful `[]`. | ✅ |
 | `src/detection/llm_contextual.py` | `detect_contextual()` JSON pass with verbatim-snippet hallucination guard; skips when unconfigured/exhausted. | ✅ |
 | `src/detection/engine.py` | `run_detection()` orchestrator: compose detectors, span→page/line/column, overlap dedupe (longer+trust rank), `summarize_counts()`. | ✅ |
-| `src/classification/risk.py` | Weighted risk scoring. | stub (P5) |
+| `src/classification/risk.py` | `classify_risk()`: Σ(weight×count)×density → Low/Med/High + sorted `RiskContributor` breakdown + summary. | ✅ |
 | `src/redaction/masker.py` | `mask_value()` — single source of masking rules (used by detection + P8 export). | ✅ (value masking); export P8 |
 | `src/rag/chunker.py` | Sentence-aware chunking. | stub (P6) |
 | `src/rag/embeddings.py` | Local sentence-transformers embedder. | stub (P6) |

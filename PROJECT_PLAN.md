@@ -16,7 +16,7 @@ Gemini free tier with a rate-limit-aware model-rotation client.
 | 2 | Document ingestion (PDF/TXT/CSV + OCR) | ✅ done |
 | 3 | Gemini model-rotation client (rate-limit engine) | ✅ done |
 | 4 | Sensitive data detection engine | ✅ done |
-| 5 | Risk classification | ⏳ pending |
+| 5 | Risk classification | ✅ done |
 | 6 | RAG Q&A over the document | ⏳ pending |
 | 7 | AI compliance summary | ⏳ pending |
 | 8 | Redaction / masking & sanitized export | ⏳ pending |
@@ -29,9 +29,13 @@ rotation client (P3); detection engine (P4) — deterministic regex + Verhoeff/L
 checksums + IFSC + provider key patterns, spaCy NER, LLM contextual pass (with
 verbatim-snippet hallucination guard), orchestrator with span→page/line mapping,
 overlap dedupe, and immediate masking; Findings tab with per-type chart, masked
-table, and explicit reveal toggle. 32 tests green, `ruff` clean.
+table, and explicit reveal toggle. Risk classification (P5) — weighted score ×
+density → Low/Med/High with contributor breakdown; Risk tab with colored badge +
+chart. 38 tests green, `ruff` clean.
 
 ## Next Task
-Phase 5 — risk classification: `classification/risk.py` weighted scoring over
-findings (severity weights + counts + density) → Low/Med/High with an explainable
-contributor breakdown; Risk tab with badge + bar chart.
+Phase 6 — RAG Q&A: `rag/chunker.py` (sentence-aware, metadata-carrying),
+`rag/embeddings.py` (local sentence-transformers on MASKED text),
+`rag/store.py` (FAISS per doc_id, persisted), `rag/qa.py` (retrieve → grounded
+Gemini synthesis + citations + refusal; counting Qs from deterministic findings);
+Chat tab.

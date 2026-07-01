@@ -73,3 +73,10 @@ minor improvements — with rationale.
   detectors outrank NER/LLM on ties.
 - **D18 — LLM snippets verified verbatim against source text.** Any snippet not
   found by exact substring match is discarded — concrete anti-hallucination guard.
+
+## Phase 5
+
+- **D19 — Mild, thresholded density factor.** `1 + 0.1·max(0, findings/pages − 3)`
+  so concentration only raises risk for genuinely dense documents and never
+  destabilizes the base weighted score. Thresholds recalibrated to Medium 10 /
+  High 30 so a single critical entity is at least Medium.
