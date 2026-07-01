@@ -106,6 +106,16 @@ class RiskReport:
 
 
 @dataclass
+class Chunk:
+    """A retrievable, already-masked slice of a document for RAG."""
+
+    chunk_id: str
+    text: str  # masked — raw PII never enters the vector store
+    page: int | None = None
+    line: int | None = None
+
+
+@dataclass
 class Citation:
     """A source pointer backing a Q&A answer."""
 

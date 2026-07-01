@@ -104,6 +104,7 @@ class Settings(BaseSettings):
     chunk_size_tokens: int = 500
     chunk_overlap_ratio: float = 0.1
     retrieval_top_k: int = 5
+    rag_min_score: float = 0.25  # cosine floor below which Q&A refuses
     index_dir: str = "data/indexes"
 
     # --- Ingestion ---
