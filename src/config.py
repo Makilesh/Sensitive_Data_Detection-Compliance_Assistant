@@ -96,8 +96,8 @@ class Settings(BaseSettings):
 
     # --- Risk classification ---
     severity_weights: dict[str, int] = Field(default_factory=lambda: dict(DEFAULT_SEVERITY_WEIGHTS))
-    risk_medium_threshold: float = 15.0
-    risk_high_threshold: float = 40.0
+    risk_medium_threshold: float = 10.0
+    risk_high_threshold: float = 30.0
 
     # --- RAG ---
     embedding_model: str = "all-MiniLM-L6-v2"
