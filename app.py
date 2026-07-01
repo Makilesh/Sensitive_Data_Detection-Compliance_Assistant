@@ -11,6 +11,7 @@ from __future__ import annotations
 import streamlit as st
 
 from src.config import get_settings
+from src.ingestion.loaders import UnsupportedFileTypeError, load_document
 
 
 def main() -> None:
@@ -47,8 +48,23 @@ def main() -> None:
         st.info("👆 Upload a PDF, TXT, or CSV file to begin.")
         return
 
-    st.success(f"Received **{uploaded.name}** ({uploaded.size:,} bytes).")
-    st.info("Processing pipeline is under construction — coming in the next phases.")
+    try:
+        document = load_document(uploaded.name, uploaded.getvalue(), settings)
+    except UnsupportedFileTypeError as exc:
+        st.error(str(exc))
+        return
+
+    st.success(f"Loaded **{document.filename}** — `{document.doc_id}`")
+    col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Format", document.file_type.upper())
+    col2.metric("Pages / segments", document.page_count)
+    col3.metric("Characters", f"{len(document.text):,}")
+    col4.metric("OCR used", "Yes" if document.used_ocr else "No")
+
+    with st.expander("Text preview", expanded=True):
+        st.text(document.text[:2000] + ("…" if len(document.text) > 2000 else ""))
+
+    st.info("Detection, risk, summary, chat, and redaction arrive in later phases.")
 
 
 if __name__ == "__main__":
