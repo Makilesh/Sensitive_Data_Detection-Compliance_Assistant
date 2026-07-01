@@ -1,0 +1,15 @@
+CONFIDENTIAL EMPLOYEE & PAYMENT RECORD
+
+Name: John Doe
+Email: john.doe@example.com
+Phone: 9876543210
+PAN: ABCDE1234F
+Aadhaar: 234567890124
+Credit Card: 4111 1111 1111 1111
+Bank IFSC: HDFC0001234
+Account No: 123456789012
+AWS Access Key: AKIAIOSFODNN7EXAMPLE
+Login password: Secret123
+Employee ID: EMP12345
+
+This document contains an invalid aadhaar 234567890125 that must be rejected by checksum.
