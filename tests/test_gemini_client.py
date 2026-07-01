@@ -80,10 +80,40 @@ def test_all_models_exhausted_raises(tmp_path) -> None:
 
 
 def test_unconfigured_client_raises() -> None:
-    settings = Settings(gemini_api_key="")
+    settings = Settings(gemini_api_key="", enable_ollama=False)
     client = GeminiClient(settings=settings)
     with pytest.raises(LLMUnavailableError):
         client.generate("hi")
+
+
+def test_ollama_backup_used_when_gemini_exhausted(tmp_path) -> None:
+    """With Gemini 429'd, rotation falls through to the local Ollama backup."""
+    clock = FakeClock()
+    models = [ModelSpec(name="m1", rpm=5, rpd=100, tpm=100_000)]
+    settings = Settings(
+        gemini_api_key="test-key",
+        model_registry=models,
+        llm_backoff_seconds=0.0,
+        enable_ollama=True,
+        ollama_model="qwen2.5:14b",
+    )
+    rl = RateLimiter(settings.model_registry, str(tmp_path / "rl.json"), now=clock)
+    client = GeminiClient(settings=settings, rate_limiter=rl, now=clock, sleep=lambda _s: None)
+
+    client._invoke_sdk = lambda *a: (_ for _ in ()).throw(RateLimit429("429"))  # type: ignore
+    client._invoke_ollama = lambda *a: ("local answer", 7)  # type: ignore[assignment]
+
+    result = client.generate("hi")
+    assert result.text == "local answer"
+    assert result.model_used == "qwen2.5:14b"
+
+
+def test_ollama_only_configuration() -> None:
+    """No Gemini key but Ollama enabled → client is configured via the local model."""
+    settings = Settings(gemini_api_key="", enable_ollama=True, ollama_model="qwen2.5:14b")
+    client = GeminiClient(settings=settings)
+    assert client.is_configured
+    assert any(m.provider == "ollama" for m in settings.model_registry)
 
 
 def test_successful_call_records_usage(tmp_path) -> None:
