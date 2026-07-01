@@ -74,8 +74,18 @@ def answer_question(
     if count_answer is not None:
         return count_answer
 
-    hits = store.search(embedder.embed_one(question), settings.retrieval_top_k)
+    hits = _retrieve(question, store, embedder, settings)
     return _synthesize(question, hits, client, settings)
+
+
+def _retrieve(question, store, embedder, settings):
+    """Retrieve hits from one store, using hybrid fusion when enabled."""
+    query_vec = embedder.embed_one(question)
+    if settings.enable_hybrid_search:
+        return store.search_hybrid(
+            question, query_vec, settings.retrieval_top_k, settings.retrieval_pool, settings.rrf_k
+        )
+    return store.search(query_vec, settings.retrieval_top_k)
 
 
 def answer_corpus(
@@ -94,10 +104,9 @@ def answer_corpus(
     if count_answer is not None:
         return count_answer
 
-    query_vec = embedder.embed_one(question)
     merged: list[tuple] = []
     for store in stores:
-        merged.extend(store.search(query_vec, settings.retrieval_top_k))
+        merged.extend(_retrieve(question, store, embedder, settings))
     merged.sort(key=lambda cs: cs[1], reverse=True)
     return _synthesize(question, merged[: settings.retrieval_top_k], client, settings)
 
