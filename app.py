@@ -7,9 +7,12 @@ results in session state, and renders them across tabs.
 
 from __future__ import annotations
 
+import time
+
 import pandas as pd
 import streamlit as st
 
+from src.audit import log_detection, log_query, read_recent
 from src.classification.risk import classify_risk
 from src.compliance import generate_summary
 from src.config import Settings, get_settings
@@ -17,7 +20,7 @@ from src.detection.engine import run_detection, summarize_counts
 from src.ingestion.loaders import UnsupportedFileTypeError, load_document
 from src.llm.gemini_client import GeminiClient
 from src.models import Document, Finding, RiskLevel, RiskReport
-from src.rag.qa import answer_question, build_index
+from src.rag.qa import answer_corpus, answer_question, build_index
 from src.redaction.export import redact_csv, redact_pdf, redact_txt
 
 _RISK_COLORS = {RiskLevel.LOW: "green", RiskLevel.MEDIUM: "orange", RiskLevel.HIGH: "red"}
@@ -30,21 +33,33 @@ def get_client() -> GeminiClient:
     return st.session_state["gemini_client"]
 
 
-def get_findings(document: Document, settings: Settings) -> list[Finding]:
-    """Detect (once per doc_id) and cache findings in session state."""
-    cache = st.session_state.setdefault("findings_cache", {})
-    if document.doc_id not in cache:
+def ensure_processed(
+    document: Document, settings: Settings
+) -> tuple[list[Finding], RiskReport]:
+    """Detect + classify (once per doc_id), cache, and audit-log the run."""
+    findings_cache = st.session_state.setdefault("findings_cache", {})
+    risk_cache = st.session_state.setdefault("risk_cache", {})
+    audited = st.session_state.setdefault("audited_docs", set())
+
+    if document.doc_id not in findings_cache:
         with st.spinner("Detecting sensitive data…"):
-            cache[document.doc_id] = run_detection(document, get_client(), settings)
-    return cache[document.doc_id]
-
-
-def get_risk(document: Document, findings: list[Finding], settings: Settings) -> RiskReport:
-    """Classify (once per doc_id) and cache the risk report."""
-    cache = st.session_state.setdefault("risk_cache", {})
-    if document.doc_id not in cache:
-        cache[document.doc_id] = classify_risk(findings, document.page_count, settings)
-    return cache[document.doc_id]
+            start = time.perf_counter()
+            findings = run_detection(document, get_client(), settings)
+            latency = (time.perf_counter() - start) * 1000
+        risk = classify_risk(findings, document.page_count, settings)
+        findings_cache[document.doc_id] = findings
+        risk_cache[document.doc_id] = risk
+        if document.doc_id not in audited:
+            log_detection(
+                document.doc_id,
+                summarize_counts(findings),
+                risk.level.value,
+                st.session_state.get("last_model_used"),
+                latency,
+                settings,
+            )
+            audited.add(document.doc_id)
+    return findings_cache[document.doc_id], risk_cache[document.doc_id]
 
 
 def render_risk(report: RiskReport) -> None:
@@ -130,6 +145,11 @@ def render_chat(document: Document, findings: list[Finding], settings: Settings)
         "Ask about the document. Answers are grounded in retrieved context and "
         "cite their sources; counting questions use the deterministic findings."
     )
+    documents = st.session_state.get("documents", {})
+    corpus = False
+    if len(documents) > 1:
+        corpus = st.checkbox("🔎 Search across all uploaded documents (corpus mode)")
+
     histories = st.session_state.setdefault("chat_histories", {})
     history = histories.setdefault(document.doc_id, [])
 
@@ -145,9 +165,16 @@ def render_chat(document: Document, findings: list[Finding], settings: Settings)
     with st.chat_message("user"):
         st.markdown(question)
 
-    store = get_store(document, findings, settings)
     with st.chat_message("assistant"), st.spinner("Thinking…"):
-        result = answer_question(question, document, findings, get_client(), store, settings=settings)
+        start = time.perf_counter()
+        if corpus:
+            result = _answer_corpus(question, documents, settings)
+        else:
+            store = get_store(document, findings, settings)
+            result = answer_question(
+                question, document, findings, get_client(), store, settings=settings
+            )
+        latency = (time.perf_counter() - start) * 1000
         if result.model_used:
             st.session_state["last_model_used"] = result.model_used
         st.markdown(result.answer)
@@ -158,7 +185,19 @@ def render_chat(document: Document, findings: list[Finding], settings: Settings)
                 for cit in result.citations:
                     loc = f"page {cit.page}, line {cit.line}"
                     st.markdown(f"- **[{cit.chunk_id}]** ({loc}) — {cit.snippet}")
+    log_query(document.doc_id, question, result.grounded, result.model_used, latency, settings)
     history.append({"role": "assistant", "content": result.answer})
+
+
+def _answer_corpus(question: str, documents: dict, settings: Settings):
+    """Merge findings + indexes across all uploaded documents for a corpus answer."""
+    all_findings: list[Finding] = []
+    stores = []
+    for doc_id, entry in documents.items():
+        findings = st.session_state["findings_cache"].get(doc_id, [])
+        all_findings.extend(findings)
+        stores.append(get_store(entry["document"], findings, settings))
+    return answer_corpus(question, all_findings, get_client(), stores, settings=settings)
 
 
 def render_quota_panel(client: GeminiClient) -> None:
@@ -173,6 +212,21 @@ def render_quota_panel(client: GeminiClient) -> None:
             f"{status} `{usage.name}` — RPM {usage.rpm_used}/{usage.rpm_limit} · "
             f"RPD {usage.rpd_used}/{usage.rpd_limit}"
         )
+
+
+def render_audit(settings: Settings) -> None:
+    """Show recent audit events (masked, PII-free) in a sidebar expander."""
+    events = read_recent(15, settings)
+    with st.expander(f"🧾 Audit log ({len(events)})"):
+        if not events:
+            st.caption("No activity logged yet.")
+            return
+        for e in reversed(events):
+            ts = e.get("ts", "")[:19]
+            if e.get("event") == "detection":
+                st.caption(f"{ts} · detect · {e.get('risk_level')} · {e.get('doc_id')}")
+            else:
+                st.caption(f"{ts} · query · grounded={e.get('grounded')} · {e.get('doc_id')}")
 
 
 def render_overview(document: Document, findings: list[Finding]) -> None:
@@ -229,6 +283,23 @@ def main() -> None:
         "compliance summary, and ask grounded questions."
     )
 
+    uploaded_files = st.file_uploader(
+        "Upload one or more documents",
+        type=["pdf", "txt", "csv"],
+        help="Supported formats: PDF, TXT, CSV.",
+        accept_multiple_files=True,
+    )
+
+    documents = st.session_state.setdefault("documents", {})
+    for uploaded in uploaded_files or []:
+        raw_bytes = uploaded.getvalue()
+        try:
+            doc = load_document(uploaded.name, raw_bytes, settings)
+        except UnsupportedFileTypeError as exc:
+            st.error(f"{uploaded.name}: {exc}")
+            continue
+        documents[doc.doc_id] = {"document": doc, "raw_bytes": raw_bytes}
+
     with st.sidebar:
         st.header("Configuration")
         st.write(f"**Embedding model:** `{settings.embedding_model}`")
@@ -236,29 +307,31 @@ def main() -> None:
         st.write(f"**Models in rotation:** {len(settings.model_registry)}")
         if not settings.gemini_api_key:
             st.warning("GEMINI_API_KEY not set — LLM contextual detection disabled.")
+
+        active_id = None
+        if documents:
+            st.divider()
+            st.subheader("Documents")
+            labels = {
+                doc_id: entry["document"].filename for doc_id, entry in documents.items()
+            }
+            active_id = st.selectbox(
+                "Active document",
+                options=list(documents.keys()),
+                format_func=lambda i: labels[i],
+            )
         st.divider()
         render_quota_panel(get_client())
+        render_audit(settings)
 
-    uploaded = st.file_uploader(
-        "Upload a document",
-        type=["pdf", "txt", "csv"],
-        help="Supported formats: PDF, TXT, CSV.",
-    )
-
-    if uploaded is None:
+    if not documents or active_id is None:
         st.info("👆 Upload a PDF, TXT, or CSV file to begin.")
         return
 
-    raw_bytes = uploaded.getvalue()
-    try:
-        document = load_document(uploaded.name, raw_bytes, settings)
-    except UnsupportedFileTypeError as exc:
-        st.error(str(exc))
-        return
-
-    st.success(f"Loaded **{document.filename}** — `{document.doc_id}`")
-    findings = get_findings(document, settings)
-    risk = get_risk(document, findings, settings)
+    entry = documents[active_id]
+    document = entry["document"]
+    st.success(f"Active: **{document.filename}** — `{document.doc_id}`")
+    findings, risk = ensure_processed(document, settings)
 
     tabs = st.tabs(
         ["📄 Overview", "🔍 Findings", "⚠️ Risk", "📋 Summary", "💬 Chat", "🖍️ Redaction"]
@@ -274,7 +347,7 @@ def main() -> None:
     with tabs[4]:
         render_chat(document, findings, settings)
     with tabs[5]:
-        render_redaction(document, findings, raw_bytes, settings)
+        render_redaction(document, findings, entry["raw_bytes"], settings)
 
 
 if __name__ == "__main__":
