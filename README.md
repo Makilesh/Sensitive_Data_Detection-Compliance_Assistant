@@ -23,6 +23,9 @@ tier** with a rate-limit-aware model-rotation engine.
   ```
   Toggle/point it via `SDA_ENABLE_OLLAMA`, `SDA_OLLAMA_MODEL`, `SDA_OLLAMA_HOST`.
   With Ollama enabled you can run the app **without** a Gemini key.
+- (Optional) GPU reranker: the auto-upgrade to `bge-reranker-v2-m3` requires a
+  **CUDA-enabled PyTorch** build (the default `pip` torch on Windows is CPU-only);
+  install the CUDA wheel from https://pytorch.org if you want GPU reranking.
 
 ### Local install
 ```bash
@@ -147,6 +150,13 @@ AI, using each where it is strongest:
    answer or **refuses** when retrieval is weak (absolute cosine floor). Counting
    questions ("how many emails?") are answered from the deterministic findings,
    not the LLM. (Hybrid toggle: `SDA_ENABLE_HYBRID_SEARCH`.)
+   - **Optional cross-encoder reranker** (`SDA_ENABLE_RERANKER`) for large/noisy
+     documents: reranks a larger candidate pool with cross-attention. GPU-aware —
+     loads lightweight `ms-marco-MiniLM-L-6-v2` on CPU, auto-upgrades to
+     `bge-reranker-v2-m3` when a CUDA GPU is available. Off by default.
+   - **Privacy local-only mode** (`SDA_LOCAL_ONLY_MODE`, or the sidebar toggle):
+     forces the local Ollama backend so **no document text — even masked — leaves
+     the machine**. Ideal for the most sensitive documents.
 6. **Rate-limit-aware model rotation + local fallback** — a registry of free-tier
    Gemini models (led by high-throughput flash tiers) with per-model RPM/TPM/RPD
    tracking; on a 429 the client cools that model down and rotates to the next,
