@@ -79,13 +79,23 @@ def answer_question(
 
 
 def _retrieve(question, store, embedder, settings):
-    """Retrieve hits from one store, using hybrid fusion when enabled."""
+    """Retrieve hits from one store: hybrid fusion, then optional reranking."""
     query_vec = embedder.embed_one(question)
+    # When reranking, pull a larger pool first, then let the cross-encoder pick.
+    top_k = settings.rerank_pool if settings.enable_reranker else settings.retrieval_top_k
+
     if settings.enable_hybrid_search:
-        return store.search_hybrid(
-            question, query_vec, settings.retrieval_top_k, settings.retrieval_pool, settings.rrf_k
+        hits = store.search_hybrid(
+            question, query_vec, top_k, settings.retrieval_pool, settings.rrf_k
         )
-    return store.search(query_vec, settings.retrieval_top_k)
+    else:
+        hits = store.search(query_vec, top_k)
+
+    if settings.enable_reranker:
+        from src.rag.reranker import get_reranker
+
+        hits = get_reranker().rerank(question, hits)[: settings.retrieval_top_k]
+    return hits
 
 
 def answer_corpus(

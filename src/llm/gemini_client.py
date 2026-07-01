@@ -95,6 +95,15 @@ class GeminiClient:
         )
         self._cooldown_seconds = 60.0
         self._sdk_configured = False
+        self._local_only = False  # session override; OR'd with settings.local_only_mode
+
+    def set_local_only(self, enabled: bool) -> None:
+        """Toggle privacy local-only mode at runtime (cloud Gemini blocked)."""
+        self._local_only = enabled
+
+    @property
+    def local_only(self) -> bool:
+        return self._local_only or self._settings.local_only_mode
 
     @property
     def rate_limiter(self) -> RateLimiter:
@@ -139,7 +148,8 @@ class GeminiClient:
         """Whether a model's backend is usable in this environment."""
         if spec.provider == "ollama":
             return self._settings.enable_ollama
-        return bool(self._settings.gemini_api_key)  # gemini
+        # Cloud Gemini: blocked entirely in privacy local-only mode.
+        return bool(self._settings.gemini_api_key) and not self.local_only
 
     def _try_model(
         self,
