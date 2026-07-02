@@ -114,7 +114,7 @@ class Settings(BaseSettings):
     # --- Detection ---
     enable_ner: bool = True
     enable_llm_contextual: bool = True
-    employee_id_pattern: str = r"\bEMP\d{4,6}\b"
+    employee_id_pattern: str = r"(?i)\bEMP\d{4,6}\b"  # case-insensitive by default
 
     # --- Risk classification ---
     severity_weights: dict[str, int] = Field(default_factory=lambda: dict(DEFAULT_SEVERITY_WEIGHTS))

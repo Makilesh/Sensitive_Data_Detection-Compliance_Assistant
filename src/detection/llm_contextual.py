@@ -89,7 +89,10 @@ def _parse_findings(raw: str) -> list[dict]:
     if start == -1 or end == -1:
         return []
     try:
-        data = json.loads(cleaned[start : end + 1])
+        # strict=False tolerates literal control chars (newlines/tabs) inside
+        # string values — LLMs frequently emit multi-line snippets verbatim,
+        # which strict JSON would reject and silently drop.
+        data = json.loads(cleaned[start : end + 1], strict=False)
     except ValueError:
         return []
     findings = data.get("findings", [])

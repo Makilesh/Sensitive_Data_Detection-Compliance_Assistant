@@ -64,14 +64,19 @@ def _rank(finding: Finding) -> int:
 
 
 def _dedupe(findings: list[Finding]) -> list[Finding]:
-    """Drop findings whose span overlaps a stronger/longer kept finding.
+    """Drop findings whose span overlaps a stronger kept finding.
 
-    Preference order for overlaps: longer span first, then higher detector rank,
-    then higher confidence. Deterministic detectors thus win over the LLM/NER.
+    Preference order for overlaps: higher detector **trust rank** first, then
+    longer span, then higher confidence. Ranking before span length ensures a
+    deterministic detector (e.g. an EMAIL/CREDIT_CARD regex) always wins over a
+    lower-trust spaCy/LLM span that merely happens to be longer — e.g. spaCy
+    tagging ``email=alice@example.com`` as ORG must not evict the inner EMAIL.
+    Equal-rank overlaps (e.g. CREDIT_CARD vs AADHAAR) still fall back to the
+    longer span, so the card wins over a coincidental inner Aadhaar match.
     """
     ordered = sorted(
         findings,
-        key=lambda f: (f.end - f.start, _rank(f), f.confidence),
+        key=lambda f: (_rank(f), f.end - f.start, f.confidence),
         reverse=True,
     )
     kept: list[Finding] = []

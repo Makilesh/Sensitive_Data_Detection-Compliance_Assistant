@@ -143,18 +143,27 @@ PATTERN_SPECS: list[PatternSpec] = [
         r"\b[A-Z]{5}[0-9]{4}[A-Z]\b",
         "regex",
         confidence=0.9,
+        flags=re.IGNORECASE,  # PANs may appear lowercase in free text
     ),
     _spec(
         EntityType.IFSC,
         r"\b[A-Z]{4}0[A-Z0-9]{6}\b",
         "regex",
         confidence=0.9,
+        flags=re.IGNORECASE,  # IFSCs may appear lowercase in free text
     ),
     _spec(
         EntityType.PHONE,
         r"(?<!\d)(?:\+?91[\s-]?)?[6-9]\d{4}[\s-]?\d{5}(?!\d)",
         "regex",
         confidence=0.85,
+    ),
+    # International numbers: require a leading + country code to keep FPs low.
+    _spec(
+        EntityType.PHONE,
+        r"(?<!\d)\+\d{1,3}(?:[\s-]?\d){6,12}(?!\d)",
+        "intl",
+        confidence=0.7,
     ),
     _spec(
         EntityType.BANK_ACCOUNT,
@@ -182,7 +191,7 @@ PATTERN_SPECS: list[PatternSpec] = [
     ),
     _spec(
         EntityType.PASSWORD,
-        r"(?i)password\s*[:=]\s*['\"]?([^\s'\"]{4,})",
+        r"(?i)['\"]?password['\"]?\s*[:=]\s*['\"]?([^\s'\"]{4,})",
         "assigned-password",
         group=1,
         confidence=0.8,
