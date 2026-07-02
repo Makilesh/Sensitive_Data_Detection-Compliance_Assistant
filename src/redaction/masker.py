@@ -107,18 +107,20 @@ def redact_all_occurrences(text: str, findings: list[Finding], style: str = "mas
     """Replace EVERY occurrence of each detected value in ``text``.
 
     Detection may match a repeated value (e.g. a name printed twice on an ID) only
-    once, but a sanitized export must leave no occurrence behind. Values are
-    replaced longest-first, guarded by alphanumeric boundaries so a value is never
-    matched inside a larger token. This complements the span-based ``redact_text``
-    used by RAG and mirrors what the PDF export already does via ``search_for``.
+    once, but a sanitized export must leave no occurrence behind. All values are
+    replaced in a **single pass** (longest-first alternation), so a value inside an
+    already-inserted placeholder is never re-redacted (avoids ``[REDACTED:[…]]``).
+    Alphanumeric boundaries stop a value matching inside a larger token. This
+    complements the span-based ``redact_text`` used by RAG and mirrors what the PDF
+    export already does via ``search_for``.
     """
-    pairs = sorted(
-        {(f.value_raw, replacement_for(f, style)) for f in findings if f.value_raw},
-        key=lambda pair: len(pair[0]),
-        reverse=True,
-    )
-    for raw, replacement in pairs:
-        text = re.sub(
-            rf"(?<![A-Za-z0-9]){re.escape(raw)}(?![A-Za-z0-9])", replacement, text
-        )
-    return text
+    mapping: dict[str, str] = {}
+    for finding in findings:
+        if finding.value_raw and finding.value_raw not in mapping:
+            mapping[finding.value_raw] = replacement_for(finding, style)
+    if not mapping:
+        return text
+    values = sorted(mapping, key=len, reverse=True)
+    alternation = "|".join(re.escape(v) for v in values)
+    pattern = re.compile(rf"(?<![A-Za-z0-9])(?:{alternation})(?![A-Za-z0-9])")
+    return pattern.sub(lambda m: mapping[m.group(0)], text)

@@ -1,12 +1,12 @@
-"""LLM contextual pass for confidential business information.
+"""LLM verification pass — the final, model-driven sweep for sensitive data.
 
-Finds fuzzy, non-structured sensitive content the regexes cannot — NDAs,
-financials, M&A / change-of-control language, litigation, trade secrets. The LLM
-returns structured findings and MUST quote text that actually appears in the
-document; every returned snippet is verified against the source text and dropped
-if it cannot be located (anti-hallucination guard). If the LLM is unavailable
-(all models exhausted or no API key), the pass returns an empty list rather than
-failing the pipeline.
+Catches what regex + spaCy cannot: fuzzy confidential business content (NDAs,
+financials, M&A, trade secrets) AND personal data in *any language or script*
+(e.g. a Tamil/Hindi name or place-name the English NER model mislabels or misses).
+Gemini returns typed, verbatim snippets; every snippet is verified against the
+source text and dropped if it cannot be located (anti-hallucination guard). If the
+LLM is unavailable (exhausted / no key), the pass returns an empty list so the
+deterministic pipeline still works.
 """
 
 from __future__ import annotations
@@ -21,18 +21,39 @@ from src.redaction.masker import mask_value
 
 _MAX_CHARS = 12_000
 
-_PROMPT_TEMPLATE = """Identify CONFIDENTIAL BUSINESS INFORMATION in the document \
-below. Look for: NDAs / confidentiality clauses, financial figures and \
-projections, M&A / change-of-control terms, litigation, and trade secrets.
+# LLM type string → our entity vocabulary. Unknown types fall back to
+# CONFIDENTIAL_INFO so nothing sensitive is silently dropped.
+_TYPE_MAP = {
+    "PERSON": EntityType.PERSON,
+    "NAME": EntityType.PERSON,
+    "LOCATION": EntityType.LOCATION,
+    "ADDRESS": EntityType.LOCATION,
+    "PLACE": EntityType.LOCATION,
+    "ORG": EntityType.ORG,
+    "ORGANIZATION": EntityType.ORG,
+    "DOB": EntityType.DOB,
+    "DATE_OF_BIRTH": EntityType.DOB,
+    "CONFIDENTIAL_INFO": EntityType.CONFIDENTIAL_INFO,
+}
+
+_PROMPT_TEMPLATE = """You are the final verification step of a PII redaction tool. \
+Identify EVERY piece of sensitive or personal data in the document below that must \
+be redacted before sharing. This includes:
+- Person names in ANY language or script (English, Tamil, Hindi, etc.).
+- Postal addresses and place / locality names.
+- Dates of birth.
+- Organizations.
+- Confidential business information (NDAs, financials, M&A, trade secrets).
 
 Rules:
-- Only report text that is literally present in the document.
-- Quote the exact snippet (verbatim) as it appears.
-- Do NOT invent, paraphrase, or infer values that are not written.
+- Only report text that is literally present in the document (quote it verbatim,
+  in its original script).
+- Do NOT invent, translate, paraphrase, or infer anything not written.
+- Classify each with a "type" from: PERSON, LOCATION, ORG, DOB, CONFIDENTIAL_INFO.
 - If nothing qualifies, return an empty list.
 
-Return ONLY valid JSON of the form:
-{{"findings": [{{"snippet": "<verbatim quote>", "rationale": "<why sensitive>"}}]}}
+Return ONLY valid JSON:
+{{"findings": [{{"snippet": "<verbatim quote>", "type": "PERSON", "rationale": "<why>"}}]}}
 
 DOCUMENT:
 \"\"\"
@@ -45,7 +66,7 @@ def detect_contextual(
     client: GeminiClient | None,
     max_chars: int = _MAX_CHARS,
 ) -> list[Finding]:
-    """Return LLM-detected confidential-info findings, verified against ``text``."""
+    """Return LLM-verified sensitive-data findings, each located in ``text``."""
     if client is None or not client.is_configured:
         return []
 
@@ -55,9 +76,8 @@ def detect_contextual(
     except Exception:  # noqa: BLE001 - AllModelsExhausted / SDK errors → skip
         return []
 
-    items = _parse_findings(result.text)
     findings: list[Finding] = []
-    for item in items:
+    for item in _parse_findings(result.text):
         snippet = (item.get("snippet") or "").strip()
         if not snippet:
             continue
@@ -65,10 +85,11 @@ def detect_contextual(
         if start == -1:  # hallucination guard: snippet must exist in the source
             continue
         actual = text[start:end]  # the real substring, with its original whitespace
+        entity = _TYPE_MAP.get(str(item.get("type", "")).upper(), EntityType.CONFIDENTIAL_INFO)
         findings.append(
             Finding(
-                entity_type=EntityType.CONFIDENTIAL_INFO,
-                value_masked=mask_value(EntityType.CONFIDENTIAL_INFO, actual),
+                entity_type=entity,
+                value_masked=mask_value(entity, actual),
                 value_raw=actual,
                 start=start,
                 end=end,
