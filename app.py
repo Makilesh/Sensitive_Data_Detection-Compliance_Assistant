@@ -326,7 +326,7 @@ def main() -> None:
             except UnsupportedFileTypeError as exc:
                 st.error(f"{uploaded.name}: {exc}")
                 continue
-        
+
         # Clean caches for any documents that were removed from the uploader
         findings_cache = st.session_state.setdefault("findings_cache", {})
         risk_cache = st.session_state.setdefault("risk_cache", {})

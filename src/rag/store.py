@@ -43,6 +43,11 @@ class FaissStore:
     def exists(self) -> bool:
         return self._index_path.exists() and self._meta_path.exists()
 
+    @property
+    def chunk_count(self) -> int:
+        """Number of indexed chunks (used to detect small, fully-retrieved docs)."""
+        return len(self._chunks)
+
     # --- build / persist -------------------------------------------------
     def build(self, chunks: list[Chunk], embeddings: np.ndarray) -> None:
         """Build the index from chunks and their embeddings, then persist."""

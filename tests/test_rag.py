@@ -64,16 +64,30 @@ def test_counting_question_uses_findings(tmp_path) -> None:
 
 
 def test_out_of_scope_question_refuses(tmp_path) -> None:
+    # With an LLM present, out-of-scope refusal is model-driven (the QA prompt
+    # tells it to decline). A correct model returns the refusal sentence.
     doc = _doc()
     findings = _findings(doc)
     settings = Settings(index_dir=str(tmp_path / "idx"), rag_min_score=0.99)
     store = qa.build_index(doc, findings, settings=settings)
-    client = _FakeClient("some answer")
+    client = _FakeClient(qa._REFUSAL)  # simulate the model correctly declining
     result = qa.answer_question(
         "What is the capital of France?", doc, findings, client, store, settings=settings
     )
     assert not result.grounded
     assert "don't have enough information" in result.answer.lower()
+
+
+def test_out_of_scope_refuses_without_llm(tmp_path) -> None:
+    # No LLM → the cosine floor is the only refusal signal (no small-doc fallback).
+    doc = _doc()
+    findings = _findings(doc)
+    settings = Settings(index_dir=str(tmp_path / "idx"), rag_min_score=0.99)
+    store = qa.build_index(doc, findings, settings=settings)
+    result = qa.answer_question(
+        "What is the capital of France?", doc, findings, None, store, settings=settings
+    )
+    assert not result.grounded
 
 
 def test_grounded_answer_has_citations(tmp_path) -> None:

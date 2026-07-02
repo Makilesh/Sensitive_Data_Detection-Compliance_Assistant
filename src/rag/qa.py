@@ -75,7 +75,18 @@ def answer_question(
         return deterministic
 
     hits = _retrieve(question, store, embedder, settings)
-    return _synthesize(question, hits, client, settings)
+    strong = [(c, s) for c, s in hits if s >= settings.rag_min_score]
+    if strong:
+        return _answer_from(question, strong, client, settings)
+    # Small-document fallback: if retrieval returned the whole document (few
+    # chunks) but nothing cleared the similarity floor, let the LLM answer from the
+    # full (masked) content instead of wrongly refusing a valid question about it.
+    # Only when an LLM is available to judge relevance (it refuses out-of-scope via
+    # the QA prompt); without one, the cosine floor is the only refusal signal.
+    small_doc = hits and store.chunk_count <= settings.retrieval_top_k
+    if small_doc and client is not None and client.is_configured:
+        return _answer_from(question, hits, client, settings)
+    return QAResult(answer=_REFUSAL, citations=[], grounded=False)
 
 
 def _retrieve(question, store, embedder, settings):
@@ -118,22 +129,21 @@ def answer_corpus(
     for store in stores:
         merged.extend(_retrieve(question, store, embedder, settings))
     merged.sort(key=lambda cs: cs[1], reverse=True)
-    return _synthesize(question, merged[: settings.retrieval_top_k], client, settings)
-
-
-def _synthesize(question, hits, client, settings) -> QAResult:
-    """Shared refusal / degrade / grounded-synthesis logic over retrieved hits."""
-    strong = [(c, s) for c, s in hits if s >= settings.rag_min_score]
+    strong = [(c, s) for c, s in merged if s >= settings.rag_min_score]
     if not strong:
         return QAResult(answer=_REFUSAL, citations=[], grounded=False)
+    return _answer_from(question, strong[: settings.retrieval_top_k], client, settings)
 
+
+def _answer_from(question, chosen, client, settings) -> QAResult:
+    """Synthesize a grounded, cited answer from the chosen (chunk, score) hits."""
     citations = [
         Citation(chunk_id=c.chunk_id, page=c.page, line=c.line, snippet=c.text[:200])
-        for c, _ in strong
+        for c, _ in chosen
     ]
 
     if client is None or not client.is_configured:
-        joined = "\n".join(f"- {c.text}" for c, _ in strong)
+        joined = "\n".join(f"- {c.text}" for c, _ in chosen)
         return QAResult(
             answer=f"(LLM unavailable — most relevant context)\n{joined}",
             citations=citations,
@@ -141,12 +151,12 @@ def _synthesize(question, hits, client, settings) -> QAResult:
         )
 
     context = "\n".join(
-        f"[{i + 1}] (page {c.page}, line {c.line}) {c.text}" for i, (c, _) in enumerate(strong)
+        f"[{i + 1}] (page {c.page}, line {c.line}) {c.text}" for i, (c, _) in enumerate(chosen)
     )
     try:
         result = client.generate(build_qa_prompt(question, context), max_output_tokens=768)
     except Exception:  # noqa: BLE001 - AllModelsExhausted / SDK errors → degrade
-        joined = "\n".join(f"- {c.text}" for c, _ in strong)
+        joined = "\n".join(f"- {c.text}" for c, _ in chosen)
         return QAResult(
             answer=f"(LLM unavailable — most relevant context)\n{joined}",
             citations=citations,
