@@ -79,9 +79,12 @@ def test_all_models_exhausted_raises(tmp_path) -> None:
         client.generate("hi")
 
 
-def test_unconfigured_client_raises() -> None:
-    settings = Settings(gemini_api_key="", enable_ollama=False)
+def test_unconfigured_client_raises(monkeypatch) -> None:
+    # Hermetic: ignore any developer .env / exported key so "unconfigured" holds.
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    settings = Settings(enable_ollama=False, _env_file=None)
     client = GeminiClient(settings=settings)
+    assert not client.is_configured
     with pytest.raises(LLMUnavailableError):
         client.generate("hi")
 
