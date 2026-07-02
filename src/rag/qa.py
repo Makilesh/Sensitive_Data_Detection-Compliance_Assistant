@@ -70,9 +70,9 @@ def answer_question(
     settings = settings or get_settings()
     embedder = embedder or get_embedder()
 
-    count_answer = _try_counting(question, findings)
-    if count_answer is not None:
-        return count_answer
+    deterministic = _try_counting(question, findings) or _try_inventory(question, findings)
+    if deterministic is not None:
+        return deterministic
 
     hits = _retrieve(question, store, embedder, settings)
     return _synthesize(question, hits, client, settings)
@@ -110,9 +110,9 @@ def answer_corpus(
     settings = settings or get_settings()
     embedder = embedder or get_embedder()
 
-    count_answer = _try_counting(question, findings_all)
-    if count_answer is not None:
-        return count_answer
+    deterministic = _try_counting(question, findings_all) or _try_inventory(question, findings_all)
+    if deterministic is not None:
+        return deterministic
 
     merged: list[tuple] = []
     for store in stores:
@@ -182,6 +182,43 @@ def _try_counting(question: str, findings: list[Finding]) -> QAResult | None:
     return QAResult(
         answer=f"There are {total} sensitive-data findings in total across "
         f"{len(counts)} categories.",
+        citations=[],
+        grounded=True,
+    )
+
+
+def _try_inventory(question: str, findings: list[Finding]) -> QAResult | None:
+    """Answer 'what sensitive data exists?' from findings; None if not that Q.
+
+    Handles the assignment's sample question directly and deterministically so it
+    never wrongly refuses just because the abstract question doesn't embed well
+    against the (masked) document chunks.
+    """
+    q = question.lower()
+    intent = re.search(r"\b(what|which|list|show|any|find)\b", q)
+    topic = re.search(
+        r"sensitive (data|info|information)|personal (data|info|information)"
+        r"|confidential (data|info|information)|\bpii\b",
+        q,
+    )
+    if not (intent and topic):
+        return None
+
+    counts = summarize_counts(findings)
+    if not counts:
+        return QAResult(
+            answer="No sensitive data was detected in this document.",
+            citations=[],
+            grounded=True,
+        )
+    parts = [
+        f"{entity.replace('_', ' ').title()} ({n})"
+        for entity, n in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))
+    ]
+    return QAResult(
+        answer="This document contains the following detected sensitive data: "
+        + ", ".join(parts)
+        + ". (Counts are from deterministic detection; values are masked for privacy.)",
         citations=[],
         grounded=True,
     )

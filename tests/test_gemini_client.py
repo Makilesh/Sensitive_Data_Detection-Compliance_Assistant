@@ -193,7 +193,8 @@ def test_next_available_model_prefers_under_limit(tmp_path) -> None:
     assert client.next_available_model() == "m2"  # m1 cooling down, skip to m2
 
 
-def test_next_available_model_none_when_unconfigured() -> None:
-    settings = Settings(gemini_api_key="", enable_ollama=False)
+def test_next_available_model_none_when_unconfigured(monkeypatch) -> None:
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)  # ignore developer .env
+    settings = Settings(enable_ollama=False, _env_file=None)
     client = GeminiClient(settings=settings)
     assert client.next_available_model() is None
