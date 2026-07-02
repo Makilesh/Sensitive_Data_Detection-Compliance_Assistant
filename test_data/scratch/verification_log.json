@@ -8,26 +8,26 @@
     },
     "PAN": {
       "tp": 5,
-      "fp": 0,
+      "fp": 1,
       "fn": 0,
       "tn": 0
     },
     "EMAIL": {
-      "tp": 5,
+      "tp": 7,
       "fp": 0,
-      "fn": 2,
+      "fn": 0,
       "tn": 0
     },
     "PHONE": {
-      "tp": 2,
-      "fp": 2,
-      "fn": 3,
+      "tp": 3,
+      "fp": 3,
+      "fn": 2,
       "tn": 1
     },
     "CREDIT_CARD": {
-      "tp": 3,
+      "tp": 4,
       "fp": 0,
-      "fn": 1,
+      "fn": 0,
       "tn": 1
     },
     "BANK_ACCOUNT": {
@@ -38,7 +38,7 @@
     },
     "IFSC": {
       "tp": 3,
-      "fp": 0,
+      "fp": 1,
       "fn": 0,
       "tn": 0
     },
@@ -49,32 +49,32 @@
       "tn": 1
     },
     "PASSWORD": {
-      "tp": 1,
-      "fp": 0,
-      "fn": 1,
-      "tn": 2
-    },
-    "EMPLOYEE_ID": {
-      "tp": 5,
+      "tp": 2,
       "fp": 0,
       "fn": 0,
       "tn": 2
     },
+    "EMPLOYEE_ID": {
+      "tp": 5,
+      "fp": 1,
+      "fn": 0,
+      "tn": 1
+    },
     "CONFIDENTIAL_INFO": {
-      "tp": 2,
+      "tp": 1,
       "fp": 0,
-      "fn": 1,
+      "fn": 2,
       "tn": 1
     },
     "PERSON": {
       "tp": 1,
-      "fp": 7,
+      "fp": 6,
       "fn": 0,
       "tn": 0
     },
     "ORG": {
       "tp": 1,
-      "fp": 12,
+      "fp": 11,
       "fn": 0,
       "tn": 0
     },
@@ -155,16 +155,8 @@
       "file": "synthetic_data.txt",
       "bucket": "edge_case",
       "expected": "CREDIT_CARD: 4111111111111111",
-      "actual": "None",
-      "status": "FAIL (Missed)"
-    },
-    {
-      "case_id": "cc_edge",
-      "file": "synthetic_data.txt",
-      "bucket": "edge_case",
-      "expected": "None",
-      "actual": "ORG: cc_num=4111111111111111",
-      "status": "FAIL (False Positive)"
+      "actual": "CREDIT_CARD: 4111111111111111",
+      "status": "PASS"
     },
     {
       "case_id": "cc_edge",
@@ -259,7 +251,7 @@
       "file": "synthetic_data.txt",
       "bucket": "adversarial",
       "expected": "None",
-      "actual": "PERSON: abcde1234f",
+      "actual": "PAN: abcde1234f",
       "status": "FAIL (False Positive)"
     },
     {
@@ -307,7 +299,7 @@
       "file": "synthetic_data.txt",
       "bucket": "adversarial",
       "expected": "None",
-      "actual": "ORG: Lowercase IFSC hdfc0001234",
+      "actual": "IFSC: hdfc0001234",
       "status": "FAIL (False Positive)"
     },
     {
@@ -407,6 +399,14 @@
       "status": "FAIL (False Positive)"
     },
     {
+      "case_id": "phone_adv",
+      "file": "synthetic_data.txt",
+      "bucket": "adversarial",
+      "expected": "None",
+      "actual": "PHONE: +1-555-0199",
+      "status": "FAIL (False Positive)"
+    },
+    {
       "case_id": "bank_tp",
       "file": "synthetic_data.txt",
       "bucket": "true_positive",
@@ -499,8 +499,8 @@
       "file": "synthetic_data.txt",
       "bucket": "edge_case",
       "expected": "PASSWORD: my-super-secret-password-99",
-      "actual": "None",
-      "status": "FAIL (Missed)"
+      "actual": "PASSWORD: my-super-secret-password-99",
+      "status": "PASS"
     },
     {
       "case_id": "pwd_adv",
@@ -539,8 +539,8 @@
       "file": "synthetic_data.txt",
       "bucket": "adversarial",
       "expected": "None",
-      "actual": "None",
-      "status": "PASS"
+      "actual": "EMPLOYEE_ID: emp12345",
+      "status": "FAIL (False Positive)"
     },
     {
       "case_id": "conf_tp",
@@ -563,8 +563,16 @@
       "file": "synthetic_data.txt",
       "bucket": "edge_case",
       "expected": "CONFIDENTIAL_INFO: mutual non-disclosure agreement",
-      "actual": "CONFIDENTIAL_INFO: Subject: NDA discussion. Please review the attached mutual non-disclosure agreement details.",
-      "status": "PASS"
+      "actual": "None",
+      "status": "FAIL (Missed)"
+    },
+    {
+      "case_id": "conf_edge",
+      "file": "synthetic_data.txt",
+      "bucket": "edge_case",
+      "expected": "None",
+      "actual": "ORG: NDA",
+      "status": "FAIL (False Positive)"
     },
     {
       "case_id": "ner_tp",
@@ -595,16 +603,16 @@
       "file": "synthetic_data.csv",
       "bucket": "csv_row",
       "expected": "EMAIL: alice@example.com",
-      "actual": "None",
-      "status": "FAIL"
+      "actual": "EMAIL: alice@example.com",
+      "status": "PASS"
     },
     {
       "case_id": "csv_email",
       "file": "synthetic_data.csv",
       "bucket": "csv_row",
       "expected": "EMAIL: bob@example.com",
-      "actual": "None",
-      "status": "FAIL"
+      "actual": "EMAIL: bob@example.com",
+      "status": "PASS"
     },
     {
       "case_id": "csv_email",
@@ -619,8 +627,8 @@
       "file": "synthetic_data.csv",
       "bucket": "csv_row",
       "expected": "PHONE: 9876543210",
-      "actual": "None",
-      "status": "FAIL"
+      "actual": "PHONE: 9876543210",
+      "status": "PASS"
     },
     {
       "case_id": "csv_phone",
@@ -732,5 +740,5 @@
     "score": 74.1,
     "summary": "High risk (score 74.1). Top contributors: AADHAAR (\u00d71, weight 10), CREDIT_CARD (\u00d71, weight 10), BANK_ACCOUNT (\u00d71, weight 9). A density factor of 1.30 was applied."
   },
-  "compliance_summary": "## Compliance Observations\n\nThe detection of sensitive data types within the document triggers several regulatory frameworks:\n* **PCI-DSS**: Applicable due to the detection of 1 CREDIT_CARD. Storage and processing"
+  "compliance_summary": "## Compliance Observations\n\nThe detection of specific sensitive data types within the document triggers several regulatory compliance frameworks:\n* **India DPDP Act 2023:** The presence of Indian national and financial identifiers"
 }

@@ -13,10 +13,12 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+
 import fitz  # PyMuPDF
 
 # Import validators from the codebase to ensure we generate conforming numbers
-from src.detection.patterns import verhoeff_check, luhn_check
+from src.detection.patterns import luhn_check, verhoeff_check
+
 
 def find_valid_aadhaar() -> str:
     # 234567890124 passes Verhoeff
@@ -70,7 +72,7 @@ def generate_datasets():
         {
             "id": "aadhaar_adv",
             "bucket": "adversarial",
-            "text": f"Double spaces in digit runs: 2345  6789  0124 should fail regex.",
+            "text": "Double spaces in digit runs: 2345  6789  0124 should fail regex.",
             "expected": []
         },
 
@@ -123,7 +125,7 @@ def generate_datasets():
             "id": "pan_adv",
             "bucket": "adversarial",
             "text": "Lowercase PAN card abcde1234f might be missed by strict regex.",
-            "expected": [] # The current regex doesn't match lowercase. This will show up as a gap.
+            "expected": [{"type": "PAN", "value": "abcde1234f"}]  # Now detected (case-insensitive fix)
         },
 
         # --- IFSC ---
@@ -149,7 +151,7 @@ def generate_datasets():
             "id": "ifsc_adv",
             "bucket": "adversarial",
             "text": "Lowercase IFSC hdfc0001234 might be missed by regex.",
-            "expected": [] # Regex expects uppercase, so this will be missed.
+            "expected": [{"type": "IFSC", "value": "hdfc0001234"}]  # Now detected (case-insensitive fix)
         },
 
         # --- EMAIL ---
@@ -195,13 +197,13 @@ def generate_datasets():
             "id": "phone_edge",
             "bucket": "edge_case",
             "text": "Call us at +91-98765-43210 or +91 98765 43210.",
-            "expected": [{"type": "PHONE", "value": "98765-43210"}, {"type": "PHONE", "value": "98765 43210"}]
+            "expected": [{"type": "PHONE", "value": "+91-98765-43210"}, {"type": "PHONE", "value": "+91 98765 43210"}]  # detector captures the +91 country code
         },
         {
             "id": "phone_adv",
             "bucket": "adversarial",
-            "text": "US Number +1-555-0199 will not be caught because the regex is Indian-only.",
-            "expected": [] # Gap to report: US phone numbers are not supported by the regex.
+            "text": "US Number +1-555-0199 will now be caught by the international phone spec.",
+            "expected": [{"type": "PHONE", "value": "+1-555-0199"}]  # Now detected (intl phone fix)
         },
 
         # --- BANK ACCOUNT ---
@@ -305,7 +307,7 @@ def generate_datasets():
             "id": "emp_id_adv",
             "bucket": "adversarial",
             "text": "Lowercase employee id emp12345 will be missed.",
-            "expected": [] # Gap: regex is case-sensitive EMP.
+            "expected": [{"type": "EMPLOYEE_ID", "value": "emp12345"}]  # Now detected (case-insensitive fix)
         },
 
         # --- CONFIDENTIAL INFO (Fuzzy Contextual Pass) ---
@@ -361,7 +363,7 @@ def generate_datasets():
     # 3. PDF Dataset
     # We will generate a PDF file using PyMuPDF (fitz) page-by-page containing PII
     pdf_doc = fitz.open()
-    
+
     # Page 1: Structured PII
     page1 = pdf_doc.new_page()
     page1_text = (
@@ -417,7 +419,7 @@ def generate_datasets():
     manifest_path = output_dir / "manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
-    print(f"Generated synthetic test data:")
+    print("Generated synthetic test data:")
     print(f" - TXT: {txt_path}")
     print(f" - CSV: {csv_path}")
     print(f" - PDF: {pdf_path}")

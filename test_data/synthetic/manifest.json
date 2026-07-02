@@ -105,7 +105,12 @@
       "id": "pan_adv",
       "bucket": "adversarial",
       "text": "Lowercase PAN card abcde1234f might be missed by strict regex.",
-      "expected": []
+      "expected": [
+        {
+          "type": "PAN",
+          "value": "abcde1234f"
+        }
+      ]
     },
     {
       "id": "ifsc_tp",
@@ -139,7 +144,12 @@
       "id": "ifsc_adv",
       "bucket": "adversarial",
       "text": "Lowercase IFSC hdfc0001234 might be missed by regex.",
-      "expected": []
+      "expected": [
+        {
+          "type": "IFSC",
+          "value": "hdfc0001234"
+        }
+      ]
     },
     {
       "id": "email_tp",
@@ -204,19 +214,24 @@
       "expected": [
         {
           "type": "PHONE",
-          "value": "98765-43210"
+          "value": "+91-98765-43210"
         },
         {
           "type": "PHONE",
-          "value": "98765 43210"
+          "value": "+91 98765 43210"
         }
       ]
     },
     {
       "id": "phone_adv",
       "bucket": "adversarial",
-      "text": "US Number +1-555-0199 will not be caught because the regex is Indian-only.",
-      "expected": []
+      "text": "US Number +1-555-0199 will now be caught by the international phone spec.",
+      "expected": [
+        {
+          "type": "PHONE",
+          "value": "+1-555-0199"
+        }
+      ]
     },
     {
       "id": "bank_tp",
@@ -357,7 +372,12 @@
       "id": "emp_id_adv",
       "bucket": "adversarial",
       "text": "Lowercase employee id emp12345 will be missed.",
-      "expected": []
+      "expected": [
+        {
+          "type": "EMPLOYEE_ID",
+          "value": "emp12345"
+        }
+      ]
     },
     {
       "id": "conf_tp",

@@ -7,20 +7,21 @@ compares actual outputs to expected labels, and calculates performance metrics.
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
+
 from dotenv import load_dotenv
 
 # Load env variables before importing codebase
 load_dotenv()
 
-from src.config import get_settings
-from src.ingestion.loaders import load_document
-from src.detection.engine import run_detection
 from src.classification.risk import classify_risk
 from src.compliance import generate_summary
+from src.config import get_settings
+from src.detection.engine import run_detection
+from src.ingestion.loaders import load_document
 from src.llm.gemini_client import GeminiClient
 from src.models import EntityType
+
 
 def load_file_bytes(path: Path) -> bytes:
     return path.read_bytes()
@@ -28,16 +29,16 @@ def load_file_bytes(path: Path) -> bytes:
 def run_verification():
     settings = get_settings()
     client = GeminiClient(settings=settings)
-    
+
     synthetic_dir = Path("test_data/synthetic")
     manifest_path = synthetic_dir / "manifest.json"
-    
+
     if not manifest_path.exists():
         print(f"Error: Manifest file {manifest_path} does not exist. Run generate_synthetic_data.py first.")
         return
 
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    
+
     txt_path = synthetic_dir / "synthetic_data.txt"
     csv_path = synthetic_dir / "synthetic_data.csv"
     pdf_path = synthetic_dir / "synthetic_data.pdf"
@@ -49,13 +50,13 @@ def run_verification():
         metrics[et.value] = {"tp": 0, "fp": 0, "fn": 0, "tn": 0}
 
     detailed_results = []
-    
+
     # -------------------------------------------------------------------------
     # 1. Verify Plain Text Cases
     # -------------------------------------------------------------------------
     txt_bytes = load_file_bytes(txt_path)
     txt_doc = load_document("synthetic_data.txt", txt_bytes, settings)
-    
+
     print("\n--- Running detection on Plain Text (TXT) ---")
     txt_findings = run_detection(txt_doc, client, settings)
     print(f"Found {len(txt_findings)} findings in TXT.")
@@ -67,17 +68,17 @@ def run_verification():
         expected_list = case["expected"]
         case_id = case["id"]
         bucket = case["bucket"]
-        
+
         # Get actual findings for this line
         actual_line_findings = [f for f in txt_findings if f.line == line_num]
-        
+
         # Check expected vs actual
         # Match matches by type & value (or fuzzy match for CONFIDENTIAL_INFO)
         matched_actual = []
         for exp in expected_list:
             exp_type = exp["type"]
             exp_val = exp["value"]
-            
+
             # Find a matching finding
             match_found = None
             for f in actual_line_findings:
@@ -92,7 +93,7 @@ def run_verification():
                         if f.value_raw == exp_val:
                             match_found = f
                             break
-            
+
             if match_found:
                 metrics[exp_type]["tp"] += 1
                 matched_actual.append(match_found)
@@ -114,7 +115,7 @@ def run_verification():
                     "actual": "None",
                     "status": "FAIL (Missed)"
                 })
-                
+
         # Count false positives for unexpected findings
         for f in actual_line_findings:
             if f not in matched_actual:
@@ -127,7 +128,7 @@ def run_verification():
                     "actual": f"{f.entity_type.value}: {f.value_raw}",
                     "status": "FAIL (False Positive)"
                 })
-                
+
         # True Negatives count: if expected is empty and actual is empty
         if not expected_list and not actual_line_findings:
             # We increment TN for the category that this case was testing (extracted from case_id prefix)
@@ -155,7 +156,7 @@ def run_verification():
     # -------------------------------------------------------------------------
     csv_bytes = load_file_bytes(csv_path)
     csv_doc = load_document("synthetic_data.csv", csv_bytes, settings)
-    
+
     print("\n--- Running detection on CSV ---")
     csv_findings = run_detection(csv_doc, client, settings)
     print(f"Found {len(csv_findings)} findings in CSV.")
@@ -212,7 +213,7 @@ def run_verification():
     # -------------------------------------------------------------------------
     pdf_bytes = load_file_bytes(pdf_path)
     pdf_doc = load_document("synthetic_data.pdf", pdf_bytes, settings)
-    
+
     print("\n--- Running detection on PDF ---")
     pdf_findings = run_detection(pdf_doc, client, settings)
     print(f"Found {len(pdf_findings)} findings in PDF.")
@@ -220,7 +221,7 @@ def run_verification():
     pdf_expected = manifest["pdf_expected"]
     # Check page 1 findings
     p1_findings = [f for f in pdf_findings if f.page == 1]
-    
+
     p1_checks = [
         ("EMAIL", pdf_expected["email"]),
         ("PAN", pdf_expected["pan"]),
@@ -229,7 +230,7 @@ def run_verification():
         ("IFSC", pdf_expected["ifsc"]),
         ("EMPLOYEE_ID", pdf_expected["emp_id"])
     ]
-    
+
     for etype, val in p1_checks:
         matches = [f for f in p1_findings if f.entity_type.value == etype and f.value_raw == val]
         if matches:
@@ -256,7 +257,7 @@ def run_verification():
     # Run risk classification on the combined findings of PDF
     risk_report = classify_risk(pdf_findings, pdf_doc.page_count, settings)
     print(f"PDF Risk Level: {risk_report.level.value} (Score: {risk_report.score})")
-    
+
     compliance_summary = generate_summary(pdf_doc, pdf_findings, risk_report, client, settings)
     print(f"Compliance Summary generated (length: {len(compliance_summary)} chars).")
 
@@ -266,24 +267,24 @@ def run_verification():
     print("\n================== METRICS SUMMARY ==================")
     print(f"{'Category':<20} | {'TP':<4} | {'FP':<4} | {'FN':<4} | {'TN':<4} | {'Precision':<10} | {'Recall':<10} | {'F1-Score':<10}")
     print("-" * 80)
-    
+
     markdown_metrics_rows = []
-    
+
     for cat, counts in sorted(metrics.items()):
         tp, fp, fn, tn = counts["tp"], counts["fp"], counts["fn"], counts["tn"]
         precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
         recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
         f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
-        
+
         print(f"{cat:<20} | {tp:<4} | {fp:<4} | {fn:<4} | {tn:<4} | {precision:<10.2f} | {recall:<10.2f} | {f1:<10.2f}")
         markdown_metrics_rows.append(
             f"| {cat} | {tp} | {fp} | {fn} | {tn} | {precision:.2f} | {recall:.2f} | {f1:.2f} |"
         )
-        
+
     # Write details to structured results log in scratch directory
     scratch_dir = Path("test_data/scratch")
     scratch_dir.mkdir(parents=True, exist_ok=True)
-    
+
     log_file = scratch_dir / "verification_log.json"
     log_data = {
         "metrics": metrics,

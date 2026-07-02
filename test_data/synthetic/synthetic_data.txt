@@ -21,7 +21,7 @@ Emails inside comments like info@example.com.org might be parsed.
 Indian mobile number is 9876543210.
 Decoys: 1234567890 (does not start with 6-9), 987654321 (9 digits).
 Call us at +91-98765-43210 or +91 98765 43210.
-US Number +1-555-0199 will not be caught because the regex is Indian-only.
+US Number +1-555-0199 will now be caught by the international phone spec.
 Transfer money to Account No: 123456789012.
 The account balance is 50000 USD (no bank account number here).
 Bank details: acc no 987654321098; holder: John.
