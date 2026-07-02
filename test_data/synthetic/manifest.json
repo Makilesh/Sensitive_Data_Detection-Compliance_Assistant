@@ -1,0 +1,440 @@
+{
+  "txt_cases": [
+    {
+      "id": "aadhaar_tp",
+      "bucket": "true_positive",
+      "text": "The customer's verified Aadhaar number is 234567890124.",
+      "expected": [
+        {
+          "type": "AADHAAR",
+          "value": "234567890124"
+        }
+      ]
+    },
+    {
+      "id": "aadhaar_tn",
+      "bucket": "true_negative",
+      "text": "The number 234567890125 is invalid and should be rejected.",
+      "expected": []
+    },
+    {
+      "id": "aadhaar_edge",
+      "bucket": "edge_case",
+      "text": "JSON logs: {\"user_profile\": {\"aadhaar\": \"234567890124\"}}",
+      "expected": [
+        {
+          "type": "AADHAAR",
+          "value": "234567890124"
+        }
+      ]
+    },
+    {
+      "id": "aadhaar_adv",
+      "bucket": "adversarial",
+      "text": "Double spaces in digit runs: 2345  6789  0124 should fail regex.",
+      "expected": []
+    },
+    {
+      "id": "cc_tp",
+      "bucket": "true_positive",
+      "text": "Please bill card number 4111111111111111.",
+      "expected": [
+        {
+          "type": "CREDIT_CARD",
+          "value": "4111111111111111"
+        }
+      ]
+    },
+    {
+      "id": "cc_tn",
+      "bucket": "true_negative",
+      "text": "The card ending in 4111111111111112 is expired.",
+      "expected": []
+    },
+    {
+      "id": "cc_edge",
+      "bucket": "edge_case",
+      "text": "Transaction details: cc_num=4111111111111111; amount=150.00",
+      "expected": [
+        {
+          "type": "CREDIT_CARD",
+          "value": "4111111111111111"
+        }
+      ]
+    },
+    {
+      "id": "cc_adv",
+      "bucket": "adversarial",
+      "text": "Product Serial number 1234567890123452 passes Luhn but might not be a card.",
+      "expected": [
+        {
+          "type": "CREDIT_CARD",
+          "value": "1234567890123452"
+        }
+      ]
+    },
+    {
+      "id": "pan_tp",
+      "bucket": "true_positive",
+      "text": "My Permanent Account Number (PAN) is ABCDE1234F.",
+      "expected": [
+        {
+          "type": "PAN",
+          "value": "ABCDE1234F"
+        }
+      ]
+    },
+    {
+      "id": "pan_tn",
+      "bucket": "true_negative",
+      "text": "Invalid PAN numbers: ABCDE12345 (no trailing letter), ABCD12345F (wrong length).",
+      "expected": []
+    },
+    {
+      "id": "pan_edge",
+      "bucket": "edge_case",
+      "text": "The CSV field holds [PAN:ABCDE1234F] which is critical.",
+      "expected": [
+        {
+          "type": "PAN",
+          "value": "ABCDE1234F"
+        }
+      ]
+    },
+    {
+      "id": "pan_adv",
+      "bucket": "adversarial",
+      "text": "Lowercase PAN card abcde1234f might be missed by strict regex.",
+      "expected": []
+    },
+    {
+      "id": "ifsc_tp",
+      "bucket": "true_positive",
+      "text": "The bank branch code IFSC is HDFC0001234.",
+      "expected": [
+        {
+          "type": "IFSC",
+          "value": "HDFC0001234"
+        }
+      ]
+    },
+    {
+      "id": "ifsc_tn",
+      "bucket": "true_negative",
+      "text": "The code HDFC1001234 is not an IFSC (5th char must be 0).",
+      "expected": []
+    },
+    {
+      "id": "ifsc_edge",
+      "bucket": "edge_case",
+      "text": "Please transfer to IFSC:HDFC0001234 immediately.",
+      "expected": [
+        {
+          "type": "IFSC",
+          "value": "HDFC0001234"
+        }
+      ]
+    },
+    {
+      "id": "ifsc_adv",
+      "bucket": "adversarial",
+      "text": "Lowercase IFSC hdfc0001234 might be missed by regex.",
+      "expected": []
+    },
+    {
+      "id": "email_tp",
+      "bucket": "true_positive",
+      "text": "Contact us at support@example.com for help.",
+      "expected": [
+        {
+          "type": "EMAIL",
+          "value": "support@example.com"
+        }
+      ]
+    },
+    {
+      "id": "email_tn",
+      "bucket": "true_negative",
+      "text": "Non-email strings: user@domain (missing TLD), @example.com (no local part).",
+      "expected": []
+    },
+    {
+      "id": "email_edge",
+      "bucket": "edge_case",
+      "text": "HTML anchor: <a href=\"mailto:admin.contact@sub.example.co.uk\">Send Email</a>",
+      "expected": [
+        {
+          "type": "EMAIL",
+          "value": "admin.contact@sub.example.co.uk"
+        }
+      ]
+    },
+    {
+      "id": "email_adv",
+      "bucket": "adversarial",
+      "text": "Emails inside comments like info@example.com.org might be parsed.",
+      "expected": [
+        {
+          "type": "EMAIL",
+          "value": "info@example.com.org"
+        }
+      ]
+    },
+    {
+      "id": "phone_tp",
+      "bucket": "true_positive",
+      "text": "Indian mobile number is 9876543210.",
+      "expected": [
+        {
+          "type": "PHONE",
+          "value": "9876543210"
+        }
+      ]
+    },
+    {
+      "id": "phone_tn",
+      "bucket": "true_negative",
+      "text": "Decoys: 1234567890 (does not start with 6-9), 987654321 (9 digits).",
+      "expected": []
+    },
+    {
+      "id": "phone_edge",
+      "bucket": "edge_case",
+      "text": "Call us at +91-98765-43210 or +91 98765 43210.",
+      "expected": [
+        {
+          "type": "PHONE",
+          "value": "98765-43210"
+        },
+        {
+          "type": "PHONE",
+          "value": "98765 43210"
+        }
+      ]
+    },
+    {
+      "id": "phone_adv",
+      "bucket": "adversarial",
+      "text": "US Number +1-555-0199 will not be caught because the regex is Indian-only.",
+      "expected": []
+    },
+    {
+      "id": "bank_tp",
+      "bucket": "true_positive",
+      "text": "Transfer money to Account No: 123456789012.",
+      "expected": [
+        {
+          "type": "BANK_ACCOUNT",
+          "value": "123456789012"
+        }
+      ]
+    },
+    {
+      "id": "bank_tn",
+      "bucket": "true_negative",
+      "text": "The account balance is 50000 USD (no bank account number here).",
+      "expected": []
+    },
+    {
+      "id": "bank_edge",
+      "bucket": "edge_case",
+      "text": "Bank details: acc no 987654321098; holder: John.",
+      "expected": [
+        {
+          "type": "BANK_ACCOUNT",
+          "value": "987654321098"
+        }
+      ]
+    },
+    {
+      "id": "bank_adv",
+      "bucket": "adversarial",
+      "text": "Underscore labels like account_num: 123456789012 will fail keyword proximity.",
+      "expected": []
+    },
+    {
+      "id": "api_key_tp",
+      "bucket": "true_positive",
+      "text": "AWS Secret: AKIAIOSFODNN7EXAMPLE",
+      "expected": [
+        {
+          "type": "API_KEY",
+          "value": "AKIAIOSFODNN7EXAMPLE"
+        }
+      ]
+    },
+    {
+      "id": "api_key_tn",
+      "bucket": "true_negative",
+      "text": "The key identifier was too short: AKIA123.",
+      "expected": []
+    },
+    {
+      "id": "api_key_edge",
+      "bucket": "edge_case",
+      "text": "api_key = \"sk-12345678901234567890123456789012\"",
+      "expected": [
+        {
+          "type": "API_KEY",
+          "value": "sk-12345678901234567890123456789012"
+        }
+      ]
+    },
+    {
+      "id": "api_key_adv",
+      "bucket": "adversarial",
+      "text": "api-key:secret_value_without_quotes_1234567890",
+      "expected": [
+        {
+          "type": "API_KEY",
+          "value": "secret_value_without_quotes_1234567890"
+        }
+      ]
+    },
+    {
+      "id": "pwd_tp",
+      "bucket": "true_positive",
+      "text": "Default login password: SecretPassword123",
+      "expected": [
+        {
+          "type": "PASSWORD",
+          "value": "SecretPassword123"
+        }
+      ]
+    },
+    {
+      "id": "pwd_tn",
+      "bucket": "true_negative",
+      "text": "Enter password to log in.",
+      "expected": []
+    },
+    {
+      "id": "pwd_edge",
+      "bucket": "edge_case",
+      "text": "credentials = { 'password': 'my-super-secret-password-99' }",
+      "expected": [
+        {
+          "type": "PASSWORD",
+          "value": "my-super-secret-password-99"
+        }
+      ]
+    },
+    {
+      "id": "pwd_adv",
+      "bucket": "adversarial",
+      "text": "password:   \"\" (empty password string is skipped by length >= 4 check)",
+      "expected": []
+    },
+    {
+      "id": "emp_id_tp",
+      "bucket": "true_positive",
+      "text": "The manager's ID is EMP12345.",
+      "expected": [
+        {
+          "type": "EMPLOYEE_ID",
+          "value": "EMP12345"
+        }
+      ]
+    },
+    {
+      "id": "emp_id_tn",
+      "bucket": "true_negative",
+      "text": "Check employee database for ids EMP12 (too short) or EMP12345678 (too long).",
+      "expected": []
+    },
+    {
+      "id": "emp_id_edge",
+      "bucket": "edge_case",
+      "text": "Assign task to [employee: EMP9999].",
+      "expected": [
+        {
+          "type": "EMPLOYEE_ID",
+          "value": "EMP9999"
+        }
+      ]
+    },
+    {
+      "id": "emp_id_adv",
+      "bucket": "adversarial",
+      "text": "Lowercase employee id emp12345 will be missed.",
+      "expected": []
+    },
+    {
+      "id": "conf_tp",
+      "bucket": "true_positive",
+      "text": "Project ProjectX: We are planning an M&A transaction with competitor Z next quarter.",
+      "expected": [
+        {
+          "type": "CONFIDENTIAL_INFO",
+          "value": "planning an M&A transaction with competitor Z next quarter"
+        }
+      ]
+    },
+    {
+      "id": "conf_tn",
+      "bucket": "true_negative",
+      "text": "This is a public press release about our new office design.",
+      "expected": []
+    },
+    {
+      "id": "conf_edge",
+      "bucket": "edge_case",
+      "text": "Subject: NDA discussion. Please review the attached mutual non-disclosure agreement details.",
+      "expected": [
+        {
+          "type": "CONFIDENTIAL_INFO",
+          "value": "mutual non-disclosure agreement"
+        }
+      ]
+    },
+    {
+      "id": "ner_tp",
+      "bucket": "true_positive",
+      "text": "Elon Musk visited Microsoft in Seattle yesterday.",
+      "expected": [
+        {
+          "type": "PERSON",
+          "value": "Elon Musk"
+        },
+        {
+          "type": "ORG",
+          "value": "Microsoft"
+        },
+        {
+          "type": "LOCATION",
+          "value": "Seattle"
+        }
+      ]
+    }
+  ],
+  "csv_expected": {
+    "emails": [
+      "alice@example.com",
+      "bob@example.com",
+      "charlie@public.com"
+    ],
+    "phones": [
+      "9876543210",
+      "9123456780"
+    ],
+    "pans": [
+      "ABCDE1234F",
+      "PQRSX6789Z"
+    ],
+    "aadhaars": [
+      "234567890124"
+    ],
+    "emp_ids": [
+      "EMP1001",
+      "EMP1002"
+    ]
+  },
+  "pdf_expected": {
+    "email": "david.miller@example.com",
+    "pan": "VWXYZ5678A",
+    "aadhaar": "234567890124",
+    "cc": "4111111111111111",
+    "ifsc": "ICIC0009876",
+    "emp_id": "EMP9876"
+  }
+}

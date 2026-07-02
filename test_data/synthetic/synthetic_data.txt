@@ -1,0 +1,44 @@
+The customer's verified Aadhaar number is 234567890124.
+The number 234567890125 is invalid and should be rejected.
+JSON logs: {"user_profile": {"aadhaar": "234567890124"}}
+Double spaces in digit runs: 2345  6789  0124 should fail regex.
+Please bill card number 4111111111111111.
+The card ending in 4111111111111112 is expired.
+Transaction details: cc_num=4111111111111111; amount=150.00
+Product Serial number 1234567890123452 passes Luhn but might not be a card.
+My Permanent Account Number (PAN) is ABCDE1234F.
+Invalid PAN numbers: ABCDE12345 (no trailing letter), ABCD12345F (wrong length).
+The CSV field holds [PAN:ABCDE1234F] which is critical.
+Lowercase PAN card abcde1234f might be missed by strict regex.
+The bank branch code IFSC is HDFC0001234.
+The code HDFC1001234 is not an IFSC (5th char must be 0).
+Please transfer to IFSC:HDFC0001234 immediately.
+Lowercase IFSC hdfc0001234 might be missed by regex.
+Contact us at support@example.com for help.
+Non-email strings: user@domain (missing TLD), @example.com (no local part).
+HTML anchor: <a href="mailto:admin.contact@sub.example.co.uk">Send Email</a>
+Emails inside comments like info@example.com.org might be parsed.
+Indian mobile number is 9876543210.
+Decoys: 1234567890 (does not start with 6-9), 987654321 (9 digits).
+Call us at +91-98765-43210 or +91 98765 43210.
+US Number +1-555-0199 will not be caught because the regex is Indian-only.
+Transfer money to Account No: 123456789012.
+The account balance is 50000 USD (no bank account number here).
+Bank details: acc no 987654321098; holder: John.
+Underscore labels like account_num: 123456789012 will fail keyword proximity.
+AWS Secret: AKIAIOSFODNN7EXAMPLE
+The key identifier was too short: AKIA123.
+api_key = "sk-12345678901234567890123456789012"
+api-key:secret_value_without_quotes_1234567890
+Default login password: SecretPassword123
+Enter password to log in.
+credentials = { 'password': 'my-super-secret-password-99' }
+password:   "" (empty password string is skipped by length >= 4 check)
+The manager's ID is EMP12345.
+Check employee database for ids EMP12 (too short) or EMP12345678 (too long).
+Assign task to [employee: EMP9999].
+Lowercase employee id emp12345 will be missed.
+Project ProjectX: We are planning an M&A transaction with competitor Z next quarter.
+This is a public press release about our new office design.
+Subject: NDA discussion. Please review the attached mutual non-disclosure agreement details.
+Elon Musk visited Microsoft in Seattle yesterday.

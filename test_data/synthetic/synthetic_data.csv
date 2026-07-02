@@ -1,0 +1,4 @@
+name,email,phone,pan,aadhaar,employee_id,notes
+Alice Smith,alice@example.com,9876543210,ABCDE1234F,234567890124,EMP1001,Confidential record.
+Bob Jones,bob@example.com,9123456780,PQRSX6789Z,234567890125,EMP1002,Decoy Aadhaar.
+Charlie Public,charlie@public.com,1234567890,INVALIDPAN,,EMP99,Public user decoy numbers.

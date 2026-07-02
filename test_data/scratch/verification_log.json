@@ -1,0 +1,736 @@
+{
+  "metrics": {
+    "AADHAAR": {
+      "tp": 4,
+      "fp": 0,
+      "fn": 0,
+      "tn": 2
+    },
+    "PAN": {
+      "tp": 5,
+      "fp": 0,
+      "fn": 0,
+      "tn": 0
+    },
+    "EMAIL": {
+      "tp": 5,
+      "fp": 0,
+      "fn": 2,
+      "tn": 0
+    },
+    "PHONE": {
+      "tp": 2,
+      "fp": 2,
+      "fn": 3,
+      "tn": 1
+    },
+    "CREDIT_CARD": {
+      "tp": 3,
+      "fp": 0,
+      "fn": 1,
+      "tn": 1
+    },
+    "BANK_ACCOUNT": {
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "tn": 2
+    },
+    "IFSC": {
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "tn": 0
+    },
+    "API_KEY": {
+      "tp": 3,
+      "fp": 0,
+      "fn": 0,
+      "tn": 1
+    },
+    "PASSWORD": {
+      "tp": 1,
+      "fp": 0,
+      "fn": 1,
+      "tn": 2
+    },
+    "EMPLOYEE_ID": {
+      "tp": 5,
+      "fp": 0,
+      "fn": 0,
+      "tn": 2
+    },
+    "CONFIDENTIAL_INFO": {
+      "tp": 2,
+      "fp": 0,
+      "fn": 1,
+      "tn": 1
+    },
+    "PERSON": {
+      "tp": 1,
+      "fp": 7,
+      "fn": 0,
+      "tn": 0
+    },
+    "ORG": {
+      "tp": 1,
+      "fp": 12,
+      "fn": 0,
+      "tn": 0
+    },
+    "LOCATION": {
+      "tp": 1,
+      "fp": 1,
+      "fn": 0,
+      "tn": 0
+    }
+  },
+  "detailed_results": [
+    {
+      "case_id": "aadhaar_tp",
+      "file": "synthetic_data.txt",
+      "bucket": "true_positive",
+      "expected": "AADHAAR: 234567890124",
+      "actual": "AADHAAR: 234567890124",
+      "status": "PASS"
+    },
+    {
+      "case_id": "aadhaar_tp",
+      "file": "synthetic_data.txt",
+      "bucket": "true_positive",
+      "expected": "None",
+      "actual": "ORG: Aadhaar",
+      "status": "FAIL (False Positive)"
+    },
+    {
+      "case_id": "aadhaar_tn",
+      "file": "synthetic_data.txt",
+      "bucket": "true_negative",
+      "expected": "None",
+      "actual": "None",
+      "status": "PASS"
+    },
+    {
+      "case_id": "aadhaar_edge",
+      "file": "synthetic_data.txt",
+      "bucket": "edge_case",
+      "expected": "AADHAAR: 234567890124",
+      "actual": "AADHAAR: 234567890124",
+      "status": "PASS"
+    },
+    {
+      "case_id": "aadhaar_edge",
+      "file": "synthetic_data.txt",
+      "bucket": "edge_case",
+      "expected": "None",
+      "actual": "PERSON: JSON",
+      "status": "FAIL (False Positive)"
+    },
+    {
+      "case_id": "aadhaar_adv",
+      "file": "synthetic_data.txt",
+      "bucket": "adversarial",
+      "expected": "None",
+      "actual": "None",
+      "status": "PASS"
+    },
+    {
+      "case_id": "cc_tp",
+      "file": "synthetic_data.txt",
+      "bucket": "true_positive",
+      "expected": "CREDIT_CARD: 4111111111111111",
+      "actual": "CREDIT_CARD: 4111111111111111",
+      "status": "PASS"
+    },
+    {
+      "case_id": "cc_tn",
+      "file": "synthetic_data.txt",
+      "bucket": "true_negative",
+      "expected": "None",
+      "actual": "None",
+      "status": "PASS"
+    },
+    {
+      "case_id": "cc_edge",
+      "file": "synthetic_data.txt",
+      "bucket": "edge_case",
+      "expected": "CREDIT_CARD: 4111111111111111",
+      "actual": "None",
+      "status": "FAIL (Missed)"
+    },
+    {
+      "case_id": "cc_edge",
+      "file": "synthetic_data.txt",
+      "bucket": "edge_case",
+      "expected": "None",
+      "actual": "ORG: cc_num=4111111111111111",
+      "status": "FAIL (False Positive)"
+    },
+    {
+      "case_id": "cc_edge",
+      "file": "synthetic_data.txt",
+      "bucket": "edge_case",
+      "expected": "None",
+      "actual": "PERSON: amount=150.00\nProduct Serial",
+      "status": "FAIL (False Positive)"
+    },
+    {
+      "case_id": "cc_adv",
+      "file": "synthetic_data.txt",
+      "bucket": "adversarial",
+      "expected": "CREDIT_CARD: 1234567890123452",
+      "actual": "CREDIT_CARD: 1234567890123452",
+      "status": "PASS"
+    },
+    {
+      "case_id": "cc_adv",
+      "file": "synthetic_data.txt",
+      "bucket": "adversarial",
+      "expected": "None",
+      "actual": "PERSON: Luhn",
+      "status": "FAIL (False Positive)"
+    },
+    {
+      "case_id": "pan_tp",
+      "file": "synthetic_data.txt",
+      "bucket": "true_positive",
+      "expected": "PAN: ABCDE1234F",
+      "actual": "PAN: ABCDE1234F",
+      "status": "PASS"
+    },
+    {
+      "case_id": "pan_tp",
+      "file": "synthetic_data.txt",
+      "bucket": "true_positive",
+      "expected": "None",
+      "actual": "ORG: PAN",
+      "status": "FAIL (False Positive)"
+    },
+    {
+      "case_id": "pan_tn",
+      "file": "synthetic_data.txt",
+      "bucket": "true_negative",
+      "expected": "None",
+      "actual": "PERSON: Invalid PAN",
+      "status": "FAIL (False Positive)"
+    },
+    {
+      "case_id": "pan_tn",
+      "file": "synthetic_data.txt",
+      "bucket": "true_negative",
+      "expected": "None",
+      "actual": "PERSON: ABCD12345F",
+      "status": "FAIL (False Positive)"
+    },
+    {
+      "case_id": "pan_edge",
+      "file": "synthetic_data.txt",
+      "bucket": "edge_case",
+      "expected": "PAN: ABCDE1234F",
+      "actual": "PAN: ABCDE1234F",
+      "status": "PASS"
+    },
+    {
+      "case_id": "pan_edge",
+      "file": "synthetic_data.txt",
+      "bucket": "edge_case",
+      "expected": "None",
+      "actual": "ORG: CSV",
+      "status": "FAIL (False Positive)"
+    },
+    {
+      "case_id": "pan_edge",
+      "file": "synthetic_data.txt",
+      "bucket": "edge_case",
+      "expected": "None",
+      "actual": "ORG: PAN",
+      "status": "FAIL (False Positive)"
+    },
+    {
+      "case_id": "pan_adv",
+      "file": "synthetic_data.txt",
+      "bucket": "adversarial",
+      "expected": "None",
+      "actual": "ORG: PAN",
+      "status": "FAIL (False Positive)"
+    },
+    {
+      "case_id": "pan_adv",
+      "file": "synthetic_data.txt",
+      "bucket": "adversarial",
+      "expected": "None",
+      "actual": "PERSON: abcde1234f",
+      "status": "FAIL (False Positive)"
+    },
+    {
+      "case_id": "ifsc_tp",
+      "file": "synthetic_data.txt",
+      "bucket": "true_positive",
+      "expected": "IFSC: HDFC0001234",
+      "actual": "IFSC: HDFC0001234",
+      "status": "PASS"
+    },
+    {
+      "case_id": "ifsc_tp",
+      "file": "synthetic_data.txt",
+      "bucket": "true_positive",
+      "expected": "None",
+      "actual": "ORG: IFSC",
+      "status": "FAIL (False Positive)"
+    },
+    {
+      "case_id": "ifsc_tn",
+      "file": "synthetic_data.txt",
+      "bucket": "true_negative",
+      "expected": "None",
+      "actual": "ORG: IFSC",
+      "status": "FAIL (False Positive)"
+    },
+    {
+      "case_id": "ifsc_edge",
+      "file": "synthetic_data.txt",
+      "bucket": "edge_case",
+      "expected": "IFSC: HDFC0001234",
+      "actual": "IFSC: HDFC0001234",
+      "status": "PASS"
+    },
+    {
+      "case_id": "ifsc_edge",
+      "file": "synthetic_data.txt",
+      "bucket": "edge_case",
+      "expected": "None",
+      "actual": "ORG: IFSC",
+      "status": "FAIL (False Positive)"
+    },
+    {
+      "case_id": "ifsc_adv",
+      "file": "synthetic_data.txt",
+      "bucket": "adversarial",
+      "expected": "None",
+      "actual": "ORG: Lowercase IFSC hdfc0001234",
+      "status": "FAIL (False Positive)"
+    },
+    {
+      "case_id": "email_tp",
+      "file": "synthetic_data.txt",
+      "bucket": "true_positive",
+      "expected": "EMAIL: support@example.com",
+      "actual": "EMAIL: support@example.com",
+      "status": "PASS"
+    },
+    {
+      "case_id": "email_tn",
+      "file": "synthetic_data.txt",
+      "bucket": "true_negative",
+      "expected": "None",
+      "actual": "ORG: TLD",
+      "status": "FAIL (False Positive)"
+    },
+    {
+      "case_id": "email_tn",
+      "file": "synthetic_data.txt",
+      "bucket": "true_negative",
+      "expected": "None",
+      "actual": "ORG: @example.com",
+      "status": "FAIL (False Positive)"
+    },
+    {
+      "case_id": "email_edge",
+      "file": "synthetic_data.txt",
+      "bucket": "edge_case",
+      "expected": "EMAIL: admin.contact@sub.example.co.uk",
+      "actual": "EMAIL: admin.contact@sub.example.co.uk",
+      "status": "PASS"
+    },
+    {
+      "case_id": "email_adv",
+      "file": "synthetic_data.txt",
+      "bucket": "adversarial",
+      "expected": "EMAIL: info@example.com.org",
+      "actual": "EMAIL: info@example.com.org",
+      "status": "PASS"
+    },
+    {
+      "case_id": "phone_tp",
+      "file": "synthetic_data.txt",
+      "bucket": "true_positive",
+      "expected": "PHONE: 9876543210",
+      "actual": "PHONE: 9876543210",
+      "status": "PASS"
+    },
+    {
+      "case_id": "phone_tn",
+      "file": "synthetic_data.txt",
+      "bucket": "true_negative",
+      "expected": "None",
+      "actual": "None",
+      "status": "PASS"
+    },
+    {
+      "case_id": "phone_edge",
+      "file": "synthetic_data.txt",
+      "bucket": "edge_case",
+      "expected": "PHONE: 98765-43210",
+      "actual": "None",
+      "status": "FAIL (Missed)"
+    },
+    {
+      "case_id": "phone_edge",
+      "file": "synthetic_data.txt",
+      "bucket": "edge_case",
+      "expected": "PHONE: 98765 43210",
+      "actual": "None",
+      "status": "FAIL (Missed)"
+    },
+    {
+      "case_id": "phone_edge",
+      "file": "synthetic_data.txt",
+      "bucket": "edge_case",
+      "expected": "None",
+      "actual": "PHONE: +91-98765-43210",
+      "status": "FAIL (False Positive)"
+    },
+    {
+      "case_id": "phone_edge",
+      "file": "synthetic_data.txt",
+      "bucket": "edge_case",
+      "expected": "None",
+      "actual": "PHONE: +91 98765 43210",
+      "status": "FAIL (False Positive)"
+    },
+    {
+      "case_id": "phone_adv",
+      "file": "synthetic_data.txt",
+      "bucket": "adversarial",
+      "expected": "None",
+      "actual": "LOCATION: US",
+      "status": "FAIL (False Positive)"
+    },
+    {
+      "case_id": "bank_tp",
+      "file": "synthetic_data.txt",
+      "bucket": "true_positive",
+      "expected": "BANK_ACCOUNT: 123456789012",
+      "actual": "BANK_ACCOUNT: 123456789012",
+      "status": "PASS"
+    },
+    {
+      "case_id": "bank_tn",
+      "file": "synthetic_data.txt",
+      "bucket": "true_negative",
+      "expected": "None",
+      "actual": "None",
+      "status": "PASS"
+    },
+    {
+      "case_id": "bank_edge",
+      "file": "synthetic_data.txt",
+      "bucket": "edge_case",
+      "expected": "BANK_ACCOUNT: 987654321098",
+      "actual": "BANK_ACCOUNT: 987654321098",
+      "status": "PASS"
+    },
+    {
+      "case_id": "bank_edge",
+      "file": "synthetic_data.txt",
+      "bucket": "edge_case",
+      "expected": "None",
+      "actual": "PERSON: John",
+      "status": "FAIL (False Positive)"
+    },
+    {
+      "case_id": "bank_adv",
+      "file": "synthetic_data.txt",
+      "bucket": "adversarial",
+      "expected": "None",
+      "actual": "None",
+      "status": "PASS"
+    },
+    {
+      "case_id": "api_key_tp",
+      "file": "synthetic_data.txt",
+      "bucket": "true_positive",
+      "expected": "API_KEY: AKIAIOSFODNN7EXAMPLE",
+      "actual": "API_KEY: AKIAIOSFODNN7EXAMPLE",
+      "status": "PASS"
+    },
+    {
+      "case_id": "api_key_tn",
+      "file": "synthetic_data.txt",
+      "bucket": "true_negative",
+      "expected": "None",
+      "actual": "None",
+      "status": "PASS"
+    },
+    {
+      "case_id": "api_key_edge",
+      "file": "synthetic_data.txt",
+      "bucket": "edge_case",
+      "expected": "API_KEY: sk-12345678901234567890123456789012",
+      "actual": "API_KEY: sk-12345678901234567890123456789012",
+      "status": "PASS"
+    },
+    {
+      "case_id": "api_key_adv",
+      "file": "synthetic_data.txt",
+      "bucket": "adversarial",
+      "expected": "API_KEY: secret_value_without_quotes_1234567890",
+      "actual": "API_KEY: secret_value_without_quotes_1234567890",
+      "status": "PASS"
+    },
+    {
+      "case_id": "pwd_tp",
+      "file": "synthetic_data.txt",
+      "bucket": "true_positive",
+      "expected": "PASSWORD: SecretPassword123",
+      "actual": "PASSWORD: SecretPassword123",
+      "status": "PASS"
+    },
+    {
+      "case_id": "pwd_tn",
+      "file": "synthetic_data.txt",
+      "bucket": "true_negative",
+      "expected": "None",
+      "actual": "None",
+      "status": "PASS"
+    },
+    {
+      "case_id": "pwd_edge",
+      "file": "synthetic_data.txt",
+      "bucket": "edge_case",
+      "expected": "PASSWORD: my-super-secret-password-99",
+      "actual": "None",
+      "status": "FAIL (Missed)"
+    },
+    {
+      "case_id": "pwd_adv",
+      "file": "synthetic_data.txt",
+      "bucket": "adversarial",
+      "expected": "None",
+      "actual": "None",
+      "status": "PASS"
+    },
+    {
+      "case_id": "emp_id_tp",
+      "file": "synthetic_data.txt",
+      "bucket": "true_positive",
+      "expected": "EMPLOYEE_ID: EMP12345",
+      "actual": "EMPLOYEE_ID: EMP12345",
+      "status": "PASS"
+    },
+    {
+      "case_id": "emp_id_tn",
+      "file": "synthetic_data.txt",
+      "bucket": "true_negative",
+      "expected": "None",
+      "actual": "None",
+      "status": "PASS"
+    },
+    {
+      "case_id": "emp_id_edge",
+      "file": "synthetic_data.txt",
+      "bucket": "edge_case",
+      "expected": "EMPLOYEE_ID: EMP9999",
+      "actual": "EMPLOYEE_ID: EMP9999",
+      "status": "PASS"
+    },
+    {
+      "case_id": "emp_id_adv",
+      "file": "synthetic_data.txt",
+      "bucket": "adversarial",
+      "expected": "None",
+      "actual": "None",
+      "status": "PASS"
+    },
+    {
+      "case_id": "conf_tp",
+      "file": "synthetic_data.txt",
+      "bucket": "true_positive",
+      "expected": "CONFIDENTIAL_INFO: planning an M&A transaction with competitor Z next quarter",
+      "actual": "CONFIDENTIAL_INFO: Project ProjectX: We are planning an M&A transaction with competitor Z next quarter.",
+      "status": "PASS"
+    },
+    {
+      "case_id": "conf_tn",
+      "file": "synthetic_data.txt",
+      "bucket": "true_negative",
+      "expected": "None",
+      "actual": "None",
+      "status": "PASS"
+    },
+    {
+      "case_id": "conf_edge",
+      "file": "synthetic_data.txt",
+      "bucket": "edge_case",
+      "expected": "CONFIDENTIAL_INFO: mutual non-disclosure agreement",
+      "actual": "CONFIDENTIAL_INFO: Subject: NDA discussion. Please review the attached mutual non-disclosure agreement details.",
+      "status": "PASS"
+    },
+    {
+      "case_id": "ner_tp",
+      "file": "synthetic_data.txt",
+      "bucket": "true_positive",
+      "expected": "PERSON: Elon Musk",
+      "actual": "PERSON: Elon Musk",
+      "status": "PASS"
+    },
+    {
+      "case_id": "ner_tp",
+      "file": "synthetic_data.txt",
+      "bucket": "true_positive",
+      "expected": "ORG: Microsoft",
+      "actual": "ORG: Microsoft",
+      "status": "PASS"
+    },
+    {
+      "case_id": "ner_tp",
+      "file": "synthetic_data.txt",
+      "bucket": "true_positive",
+      "expected": "LOCATION: Seattle",
+      "actual": "LOCATION: Seattle",
+      "status": "PASS"
+    },
+    {
+      "case_id": "csv_email",
+      "file": "synthetic_data.csv",
+      "bucket": "csv_row",
+      "expected": "EMAIL: alice@example.com",
+      "actual": "None",
+      "status": "FAIL"
+    },
+    {
+      "case_id": "csv_email",
+      "file": "synthetic_data.csv",
+      "bucket": "csv_row",
+      "expected": "EMAIL: bob@example.com",
+      "actual": "None",
+      "status": "FAIL"
+    },
+    {
+      "case_id": "csv_email",
+      "file": "synthetic_data.csv",
+      "bucket": "csv_row",
+      "expected": "EMAIL: charlie@public.com",
+      "actual": "EMAIL: charlie@public.com",
+      "status": "PASS"
+    },
+    {
+      "case_id": "csv_phone",
+      "file": "synthetic_data.csv",
+      "bucket": "csv_row",
+      "expected": "PHONE: 9876543210",
+      "actual": "None",
+      "status": "FAIL"
+    },
+    {
+      "case_id": "csv_phone",
+      "file": "synthetic_data.csv",
+      "bucket": "csv_row",
+      "expected": "PHONE: 9123456780",
+      "actual": "PHONE: 9123456780",
+      "status": "PASS"
+    },
+    {
+      "case_id": "csv_pan",
+      "file": "synthetic_data.csv",
+      "bucket": "csv_row",
+      "expected": "PAN: ABCDE1234F",
+      "actual": "PAN: ABCDE1234F",
+      "status": "PASS"
+    },
+    {
+      "case_id": "csv_pan",
+      "file": "synthetic_data.csv",
+      "bucket": "csv_row",
+      "expected": "PAN: PQRSX6789Z",
+      "actual": "PAN: PQRSX6789Z",
+      "status": "PASS"
+    },
+    {
+      "case_id": "csv_aadhaar",
+      "file": "synthetic_data.csv",
+      "bucket": "csv_row",
+      "expected": "AADHAAR: 234567890124",
+      "actual": "AADHAAR: 234567890124",
+      "status": "PASS"
+    },
+    {
+      "case_id": "csv_emp_id",
+      "file": "synthetic_data.csv",
+      "bucket": "csv_row",
+      "expected": "EMPLOYEE_ID: EMP1001",
+      "actual": "EMPLOYEE_ID: EMP1001",
+      "status": "PASS"
+    },
+    {
+      "case_id": "csv_emp_id",
+      "file": "synthetic_data.csv",
+      "bucket": "csv_row",
+      "expected": "EMPLOYEE_ID: EMP1002",
+      "actual": "EMPLOYEE_ID: EMP1002",
+      "status": "PASS"
+    },
+    {
+      "case_id": "pdf_p1_email",
+      "file": "synthetic_data.pdf",
+      "bucket": "pdf_page_1",
+      "expected": "EMAIL: david.miller@example.com",
+      "actual": "EMAIL: david.miller@example.com",
+      "status": "PASS"
+    },
+    {
+      "case_id": "pdf_p1_pan",
+      "file": "synthetic_data.pdf",
+      "bucket": "pdf_page_1",
+      "expected": "PAN: VWXYZ5678A",
+      "actual": "PAN: VWXYZ5678A",
+      "status": "PASS"
+    },
+    {
+      "case_id": "pdf_p1_aadhaar",
+      "file": "synthetic_data.pdf",
+      "bucket": "pdf_page_1",
+      "expected": "AADHAAR: 234567890124",
+      "actual": "AADHAAR: 234567890124",
+      "status": "PASS"
+    },
+    {
+      "case_id": "pdf_p1_credit_card",
+      "file": "synthetic_data.pdf",
+      "bucket": "pdf_page_1",
+      "expected": "CREDIT_CARD: 4111111111111111",
+      "actual": "CREDIT_CARD: 4111111111111111",
+      "status": "PASS"
+    },
+    {
+      "case_id": "pdf_p1_ifsc",
+      "file": "synthetic_data.pdf",
+      "bucket": "pdf_page_1",
+      "expected": "IFSC: ICIC0009876",
+      "actual": "IFSC: ICIC0009876",
+      "status": "PASS"
+    },
+    {
+      "case_id": "pdf_p1_employee_id",
+      "file": "synthetic_data.pdf",
+      "bucket": "pdf_page_1",
+      "expected": "EMPLOYEE_ID: EMP9876",
+      "actual": "EMPLOYEE_ID: EMP9876",
+      "status": "PASS"
+    },
+    {
+      "case_id": "pdf_p2_confidential",
+      "file": "synthetic_data.pdf",
+      "bucket": "pdf_page_2",
+      "expected": "CONFIDENTIAL_INFO: NDA/M&A references",
+      "actual": "None",
+      "status": "FAIL"
+    }
+  ],
+  "risk_report": {
+    "level": "High",
+    "score": 74.1,
+    "summary": "High risk (score 74.1). Top contributors: AADHAAR (\u00d71, weight 10), CREDIT_CARD (\u00d71, weight 10), BANK_ACCOUNT (\u00d71, weight 9). A density factor of 1.30 was applied."
+  },
+  "compliance_summary": "## Compliance Observations\n\nThe detection of sensitive data types within the document triggers several regulatory frameworks:\n* **PCI-DSS**: Applicable due to the detection of 1 CREDIT_CARD. Storage and processing"
+}
