@@ -112,6 +112,34 @@ minor improvements — with rationale.
   a strong compliance option for the most sensitive documents. Reuses the existing
   provider-gating seam; `is_configured` degrades correctly if no local backend.
 
+## Post-build — Real-document hardening (from a live Aadhaar test)
+
+- **D40 — VID + DOB detectors + new entity types.** A real Aadhaar leaked its
+  16-digit Virtual ID (survived redaction) and DOB. Added `EntityType.VID` /
+  `EntityType.DOB`, keyword-anchored detectors (`\bVID\b`, `DOB:`), severity
+  weights, masking (DOB fully masked), and compliance guidance. Keying on the
+  label avoids card/date false positives.
+- **D41 — Deterministic name detection (`detection/names.py`).** spaCy misses
+  Indian/transliterated names ("Makilesh M") while mislabelling "Tamil Nadu" as a
+  person. Rather than ship a heavy NER model (deploy memory), names are caught by
+  document *structure* that generalizes across IDs, bank statements, HR records,
+  invoices, and letters: field labels (`Name:`, `Account Holder:`), relation
+  prefixes (`S/O`, `D/O`), salutations (`Mr.`, `Smt.`), and addressees (`To`). The
+  addressee scan skips non-Latin lines so it reaches the romanized name on IDs.
+- **D42 — Occurrence-complete redaction (`masker.redact_all_occurrences`).**
+  Detection may match a repeated value once, but a sanitized export must leave no
+  occurrence. TXT export now replaces every occurrence of each detected value
+  (longest-first, alphanumeric-boundary guarded to avoid substring over-redaction)
+  — mirroring what the PDF export already does via `search_for`. Findings stay
+  distinct (clean counts/table); redaction is exhaustive.
+- **D43 — NER value-dedup + inventory intent.** Repeated spaCy tokens (a town
+  printed 5× on an ID) collapse to one finding; "what sensitive data exists?" is
+  answered deterministically from findings instead of wrongly refusing.
+- **Known limitation:** spaCy `en_core_web_sm` still over-tags some geographic
+  terms (over-redaction, never a leak). A transformer NER (`en_core_web_trf`) would
+  fix precision but is too heavy for the free-tier deploy — logged as a future
+  improvement.
+
 ## Post-build — Hybrid RAG (borrowed from ma-diligence-rag-engine)
 
 - **D30 — Adopt hybrid dense+sparse retrieval with RRF.** The reference repo's
