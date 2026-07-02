@@ -174,9 +174,14 @@ PATTERN_SPECS: list[PatternSpec] = [
         confidence=0.7,
     ),
     # Date of birth — keyed on a DOB label so issue/other dates are not caught.
+    # Handles numeric (12/05/1990) and written forms (15 August 1985 / Aug 15, 1985).
     _spec(
         EntityType.DOB,
-        r"(?i)(?:DOB|date\s*of\s*birth)\s*[:.]?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})",
+        r"(?i)(?:DOB|date\s*of\s*birth|d\.o\.b)\s*[:.]?\s*("
+        r"\d{1,2}[/-]\d{1,2}[/-]\d{2,4}"
+        r"|\d{1,2}\s+(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{4}"
+        r"|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2},?\s+\d{4}"
+        r")",
         "dob-keyword",
         group=1,
         confidence=0.85,
@@ -190,7 +195,8 @@ PATTERN_SPECS: list[PatternSpec] = [
     ),
     # API keys / tokens — provider-specific high-signal patterns.
     _spec(EntityType.API_KEY, r"\bAKIA[0-9A-Z]{16}\b", "aws-key", confidence=0.97),
-    _spec(EntityType.API_KEY, r"\bsk-[A-Za-z0-9]{20,}\b", "openai-key", confidence=0.9),
+    # OpenAI keys, incl. modern project keys (sk-proj-...) that contain dashes.
+    _spec(EntityType.API_KEY, r"\bsk-[A-Za-z0-9_-]{20,}", "openai-key", confidence=0.9),
     _spec(EntityType.API_KEY, r"\bghp_[A-Za-z0-9]{36}\b", "github-token", confidence=0.97),
     _spec(
         EntityType.API_KEY,

@@ -12,6 +12,7 @@ failing the pipeline.
 from __future__ import annotations
 
 import json
+import re
 
 from src.llm.gemini_client import GeminiClient
 from src.llm.prompts import with_preamble
@@ -60,22 +61,61 @@ def detect_contextual(
         snippet = (item.get("snippet") or "").strip()
         if not snippet:
             continue
-        idx = text.find(snippet)
-        if idx == -1:  # hallucination guard: snippet must exist verbatim
+        start, end = _locate_snippet(text, snippet)
+        if start == -1:  # hallucination guard: snippet must exist in the source
             continue
+        actual = text[start:end]  # the real substring, with its original whitespace
         findings.append(
             Finding(
                 entity_type=EntityType.CONFIDENTIAL_INFO,
-                value_masked=mask_value(EntityType.CONFIDENTIAL_INFO, snippet),
-                value_raw=snippet,
-                start=idx,
-                end=idx + len(snippet),
+                value_masked=mask_value(EntityType.CONFIDENTIAL_INFO, actual),
+                value_raw=actual,
+                start=start,
+                end=end,
                 detector="llm",
                 confidence=0.7,
                 rationale=(item.get("rationale") or "").strip() or None,
             )
         )
     return findings
+
+
+def _locate_snippet(text: str, snippet: str) -> tuple[int, int]:
+    """Find ``snippet`` in ``text``, tolerating whitespace/newline differences.
+
+    LLMs frequently normalize a document's internal line breaks when quoting, so a
+    strict ``str.find`` wrongly rejects real snippets. This still requires the
+    snippet to exist in the source (anti-hallucination) but ignores differences in
+    runs of whitespace, mapping the match back to the original character offsets.
+    """
+    exact = text.find(snippet)
+    if exact != -1:
+        return exact, exact + len(snippet)
+
+    norm_chars: list[str] = []
+    norm_to_orig: list[int] = []
+    prev_space = False
+    for i, ch in enumerate(text):
+        if ch.isspace():
+            if prev_space:
+                continue
+            norm_chars.append(" ")
+            norm_to_orig.append(i)
+            prev_space = True
+        else:
+            norm_chars.append(ch)
+            norm_to_orig.append(i)
+            prev_space = False
+    norm_text = "".join(norm_chars)
+    norm_snippet = re.sub(r"\s+", " ", snippet).strip()
+    if not norm_snippet:
+        return -1, -1
+    j = norm_text.find(norm_snippet)
+    if j == -1:
+        return -1, -1
+    start = norm_to_orig[j]
+    end = norm_to_orig[j + len(norm_snippet) - 1] + 1
+    return start, end
 
 
 def _parse_findings(raw: str) -> list[dict]:
