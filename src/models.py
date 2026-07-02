@@ -16,9 +16,11 @@ class EntityType(StrEnum):
     """Canonical sensitive-entity vocabulary used everywhere."""
 
     AADHAAR = "AADHAAR"
+    VID = "VID"  # Aadhaar Virtual ID (16-digit)
     PAN = "PAN"
     EMAIL = "EMAIL"
     PHONE = "PHONE"
+    DOB = "DOB"  # date of birth
     CREDIT_CARD = "CREDIT_CARD"
     BANK_ACCOUNT = "BANK_ACCOUNT"
     IFSC = "IFSC"

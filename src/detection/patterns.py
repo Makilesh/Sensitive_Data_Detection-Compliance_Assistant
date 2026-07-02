@@ -138,6 +138,14 @@ PATTERN_SPECS: list[PatternSpec] = [
         validator=verhoeff_check,
         confidence=0.4,
     ),
+    # Aadhaar Virtual ID (16-digit), keyed on the VID label to avoid card FPs.
+    _spec(
+        EntityType.VID,
+        r"(?i)\bVID\b\s*[:.]?\s*(\d{4}\s?\d{4}\s?\d{4}\s?\d{4})",
+        "vid-keyword",
+        group=1,
+        confidence=0.9,
+    ),
     _spec(
         EntityType.PAN,
         r"\b[A-Z]{5}[0-9]{4}[A-Z]\b",
@@ -164,6 +172,14 @@ PATTERN_SPECS: list[PatternSpec] = [
         r"(?<!\d)\+\d{1,3}(?:[\s-]?\d){6,12}(?!\d)",
         "intl",
         confidence=0.7,
+    ),
+    # Date of birth — keyed on a DOB label so issue/other dates are not caught.
+    _spec(
+        EntityType.DOB,
+        r"(?i)(?:DOB|date\s*of\s*birth)\s*[:.]?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})",
+        "dob-keyword",
+        group=1,
+        confidence=0.85,
     ),
     _spec(
         EntityType.BANK_ACCOUNT,

@@ -58,6 +58,8 @@ DEFAULT_MODEL_REGISTRY: list[ModelSpec] = [
 # Per-entity-type severity weights driving risk classification (Phase 5).
 DEFAULT_SEVERITY_WEIGHTS: dict[str, int] = {
     "AADHAAR": 10,
+    "VID": 10,
+    "DOB": 6,
     "CREDIT_CARD": 10,
     "BANK_ACCOUNT": 9,
     "IFSC": 7,

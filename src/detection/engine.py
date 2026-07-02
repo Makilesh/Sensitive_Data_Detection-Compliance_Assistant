@@ -25,6 +25,8 @@ _DETECTOR_RANK = {
     "github-token": 5,
     "regex": 4,
     "keyword-proximity": 4,
+    "vid-keyword": 4,
+    "dob-keyword": 4,
     "openai-key": 4,
     "jwt": 4,
     "assigned-secret": 4,
@@ -49,7 +51,7 @@ def run_detection(
 
     findings: list[Finding] = detect_patterns(document.text, settings)
     if use_ner:
-        findings.extend(detect_ner(document.text))
+        findings.extend(_dedupe_ner_by_value(detect_ner(document.text)))
     if use_llm:
         findings.extend(detect_contextual(document.text, client))
 
@@ -57,6 +59,25 @@ def run_detection(
     _locate(findings, document.segments)
     findings.sort(key=lambda f: (f.start, f.entity_type.value))
     return findings
+
+
+def _dedupe_ner_by_value(ner_findings: list[Finding]) -> list[Finding]:
+    """Collapse repeated NER hits for the same (type, value) to the first one.
+
+    spaCy re-tags the same token wherever it recurs (common in addresses — e.g. a
+    town name repeated across an Aadhaar), which floods the findings list and
+    inflates the risk score. Keeping one occurrence per distinct value keeps the
+    signal without the noise.
+    """
+    seen: set[tuple[str, str]] = set()
+    kept: list[Finding] = []
+    for finding in ner_findings:
+        key = (finding.entity_type.value, finding.value_raw.strip().lower())
+        if key in seen:
+            continue
+        seen.add(key)
+        kept.append(finding)
+    return kept
 
 
 def _rank(finding: Finding) -> int:

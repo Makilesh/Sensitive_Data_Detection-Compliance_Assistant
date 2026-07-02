@@ -46,8 +46,12 @@ def mask_value(entity_type: EntityType, raw: str) -> str:
         return "********"
     if entity_type == EntityType.EMAIL:
         return _mask_email(raw)
+    if entity_type == EntityType.DOB:
+        # Never reveal any part of a date of birth.
+        return "".join("*" if c.isdigit() else c for c in raw)
     if entity_type in {
         EntityType.AADHAAR,
+        EntityType.VID,
         EntityType.CREDIT_CARD,
         EntityType.PHONE,
         EntityType.BANK_ACCOUNT,

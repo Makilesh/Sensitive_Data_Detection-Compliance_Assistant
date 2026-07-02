@@ -19,6 +19,8 @@ from src.models import Document, Finding, RiskReport, SummaryResult
 # Regulation hints + remediation guidance per entity type (single source).
 _REMEDIATION: dict[str, tuple[str, str]] = {
     "AADHAAR": ("India DPDP Act 2023", "Mask/tokenize Aadhaar; restrict access; avoid storage."),
+    "VID": ("India DPDP Act 2023", "Treat Aadhaar VID as Aadhaar; mask and restrict access."),
+    "DOB": ("GDPR / DPDP", "Date of birth is personal data; minimize and restrict access."),
     "PAN": ("India DPDP Act 2023", "Encrypt PAN at rest; limit to authorized processing."),
     "CREDIT_CARD": ("PCI-DSS", "Never store PANs in clear text; tokenize; scope PCI environment."),
     "BANK_ACCOUNT": ("PCI-DSS / DPDP", "Encrypt account numbers; enforce least-privilege access."),
