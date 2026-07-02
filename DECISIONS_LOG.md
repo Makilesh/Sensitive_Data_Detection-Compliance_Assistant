@@ -140,6 +140,28 @@ minor improvements — with rationale.
   fix precision but is too heavy for the free-tier deploy — logged as a future
   improvement.
 
+## Post-build — Manual sample review (all 9 categories)
+
+Ran 9 realistic sample docs (KYC, PAN form, emails, bank statement, invoice,
+config file, payslip, NDA, CSV) through the full pipeline. Fixes:
+
+- **D44 — DOB written forms.** "15 August 1985" / "Aug 15, 1985" now detected
+  (previously only `DD/MM/YYYY`), keyed on the DOB label so other dates are safe.
+- **D45 — First/Last/Given/Surname labels.** Added to the name detector so split
+  name fields are caught, not just "Name:".
+- **D46 — OpenAI project keys.** `sk-proj-…` (dashes) now matched by the dedicated
+  `openai-key` detector (previously only caught via the `api_key:` label).
+- **D47 — LLM contextual: truncation + whitespace tolerance (recall bug).** The
+  NDA returned **zero** confidential findings because (a) the JSON was truncated at
+  `max_output_tokens` → parse failed, and (b) the verbatim-snippet guard rejected
+  snippets whose mid-sentence newlines the LLM had normalized. Fixed by raising the
+  budget to 2048, salvaging complete objects from truncated JSON, and a
+  whitespace-tolerant `_locate_snippet` that maps back to the original offsets.
+  This also lifts the previously-low CONFIDENTIAL_INFO recall. Anti-hallucination
+  guarantee preserved (snippet must still exist in the source modulo whitespace).
+- Regression tests: `test_manual_samples.py` (per-file coverage + decoy rejection
+  + redaction leak checks) and `test_llm_contextual.py` (parse/locate). 119 total.
+
 ## Post-build — Hybrid RAG (borrowed from ma-diligence-rag-engine)
 
 - **D30 — Adopt hybrid dense+sparse retrieval with RRF.** The reference repo's
