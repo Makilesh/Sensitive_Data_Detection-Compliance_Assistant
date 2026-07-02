@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from src.config import Settings, get_settings
 from src.detection.llm_contextual import detect_contextual
+from src.detection.names import detect_names
 from src.detection.ner import detect_ner
 from src.detection.patterns import detect_patterns
 from src.llm.gemini_client import GeminiClient
@@ -31,6 +32,10 @@ _DETECTOR_RANK = {
     "jwt": 4,
     "assigned-secret": 4,
     "assigned-password": 4,
+    "name-label": 3,
+    "name-relation": 3,
+    "name-salutation": 3,
+    "name-addressee": 3,
     "spacy": 2,
     "llm": 1,
 }
@@ -50,6 +55,7 @@ def run_detection(
     use_llm = settings.enable_llm_contextual if enable_llm is None else enable_llm
 
     findings: list[Finding] = detect_patterns(document.text, settings)
+    findings.extend(detect_names(document.text))  # deterministic, label-based
     if use_ner:
         findings.extend(_dedupe_ner_by_value(detect_ner(document.text)))
     if use_llm:

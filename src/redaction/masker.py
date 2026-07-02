@@ -8,6 +8,8 @@ layers.
 
 from __future__ import annotations
 
+import re
+
 from src.models import EntityType, Finding
 
 # Entity types that must be fully masked (never reveal any part).
@@ -98,4 +100,25 @@ def redact_text(
         end = finding.end - base_offset
         if 0 <= start < end <= length:
             text = text[:start] + replacement_for(finding, style) + text[end:]
+    return text
+
+
+def redact_all_occurrences(text: str, findings: list[Finding], style: str = "mask") -> str:
+    """Replace EVERY occurrence of each detected value in ``text``.
+
+    Detection may match a repeated value (e.g. a name printed twice on an ID) only
+    once, but a sanitized export must leave no occurrence behind. Values are
+    replaced longest-first, guarded by alphanumeric boundaries so a value is never
+    matched inside a larger token. This complements the span-based ``redact_text``
+    used by RAG and mirrors what the PDF export already does via ``search_for``.
+    """
+    pairs = sorted(
+        {(f.value_raw, replacement_for(f, style)) for f in findings if f.value_raw},
+        key=lambda pair: len(pair[0]),
+        reverse=True,
+    )
+    for raw, replacement in pairs:
+        text = re.sub(
+            rf"(?<![A-Za-z0-9]){re.escape(raw)}(?![A-Za-z0-9])", replacement, text
+        )
     return text

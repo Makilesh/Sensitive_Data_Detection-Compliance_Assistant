@@ -13,7 +13,7 @@ import io
 
 from src.config import Settings, get_settings
 from src.models import Document, Finding
-from src.redaction.masker import redact_text, replacement_for
+from src.redaction.masker import redact_all_occurrences, replacement_for
 
 
 def _style(settings: Settings | None) -> str:
@@ -21,8 +21,8 @@ def _style(settings: Settings | None) -> str:
 
 
 def redact_txt(document: Document, findings: list[Finding], settings: Settings | None = None) -> str:
-    """Return the full document text with all sensitive spans redacted."""
-    return redact_text(document.text, findings, style=_style(settings))
+    """Return the full document text with every occurrence of each value redacted."""
+    return redact_all_occurrences(document.text, findings, style=_style(settings))
 
 
 def redact_csv(
