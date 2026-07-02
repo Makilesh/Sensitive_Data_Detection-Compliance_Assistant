@@ -96,6 +96,7 @@ class GeminiClient:
         self._cooldown_seconds = 60.0
         self._sdk_configured = False
         self._local_only = False  # session override; OR'd with settings.local_only_mode
+        self._last_model_used: str | None = None  # single source of truth for the UI
 
     def set_local_only(self, enabled: bool) -> None:
         """Toggle privacy local-only mode at runtime (cloud Gemini blocked)."""
@@ -113,6 +114,24 @@ class GeminiClient:
     def is_configured(self) -> bool:
         """True if any backend (cloud Gemini or local Ollama) can serve requests."""
         return any(self._provider_available(m) for m in self._settings.model_registry)
+
+    @property
+    def last_model_used(self) -> str | None:
+        """The model that served the most recent successful call, if any."""
+        return self._last_model_used
+
+    def next_available_model(self) -> str | None:
+        """Peek at which model would serve the next call, without calling it.
+
+        Prefers a model that is both provider-available and under its rate
+        limit; falls back to the first provider-available model (informational
+        only — an actual call could still raise ``AllModelsExhausted``).
+        """
+        available = [m for m in self._settings.model_registry if self._provider_available(m)]
+        for spec in available:
+            if self._rate_limiter.can_use(spec.name):
+                return spec.name
+        return available[0].name if available else None
 
     def generate(
         self,
@@ -173,6 +192,7 @@ class GeminiClient:
                     continue  # retry same model
                 return None  # non-retryable or retries exhausted → rotate
             self._rate_limiter.record(model_name, prompt_tokens + response_tokens)
+            self._last_model_used = model_name
             return LLMResult(
                 text=text,
                 model_used=model_name,

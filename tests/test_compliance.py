@@ -36,32 +36,34 @@ class _FakeClient:
 def test_template_fallback_when_no_llm() -> None:
     findings = _findings()
     risk = classify_risk(findings)
-    summary = generate_summary(_doc(), findings, risk, client=None)
-    assert "Compliance Observations" in summary
-    assert "Security Risks" in summary
-    assert "Recommended Remediation" in summary
+    result = generate_summary(_doc(), findings, risk, client=None)
+    assert result.model_used is None  # template fallback, no LLM served this
+    assert "Compliance Observations" in result.text
+    assert "Security Risks" in result.text
+    assert "Recommended Remediation" in result.text
     # References the entity types actually found.
-    assert "AADHAAR" in summary and "CREDIT_CARD" in summary and "EMAIL" in summary
+    assert "AADHAAR" in result.text and "CREDIT_CARD" in result.text and "EMAIL" in result.text
 
 
 def test_template_mentions_relevant_regulations() -> None:
     findings = _findings()
-    summary = generate_summary(_doc(), findings, classify_risk(findings), client=None)
-    assert "PCI-DSS" in summary  # from credit card
-    assert "DPDP" in summary  # from aadhaar/email
+    result = generate_summary(_doc(), findings, classify_risk(findings), client=None)
+    assert "PCI-DSS" in result.text  # from credit card
+    assert "DPDP" in result.text  # from aadhaar/email
 
 
 def test_empty_findings_summary() -> None:
     risk = classify_risk([])
-    summary = generate_summary(_doc(), [], risk, client=None)
-    assert "No sensitive data" in summary
+    result = generate_summary(_doc(), [], risk, client=None)
+    assert "No sensitive data" in result.text
 
 
 def test_llm_summary_used_when_available() -> None:
     findings = _findings()
     client = _FakeClient("## Compliance Observations\nAll good.")
-    summary = generate_summary(_doc(), findings, classify_risk(findings), client=client)
-    assert summary.startswith("## Compliance Observations")
+    result = generate_summary(_doc(), findings, classify_risk(findings), client=client)
+    assert result.text.startswith("## Compliance Observations")
+    assert result.model_used == "fake"  # reports which model generated it
     # Brief passed to the LLM must be masked (no raw card value).
     assert "4111111111111111" not in client.captured
 
@@ -72,5 +74,6 @@ def test_llm_error_falls_back_to_template() -> None:
             raise RuntimeError("boom")
 
     findings = _findings()
-    summary = generate_summary(_doc(), findings, classify_risk(findings), client=_Boom(""))
-    assert "Recommended Remediation" in summary
+    result = generate_summary(_doc(), findings, classify_risk(findings), client=_Boom(""))
+    assert result.model_used is None
+    assert "Recommended Remediation" in result.text

@@ -159,3 +159,41 @@ def test_successful_call_records_usage(tmp_path) -> None:
     snap = {u.name: u for u in rl.snapshot()}
     assert snap["m1"].rpm_used == 1
     assert snap["m1"].tpm_used > 0
+
+
+# --- last_model_used / next_available_model (UI visibility) --------------
+def test_last_model_used_starts_none_then_updates(tmp_path) -> None:
+    clock = FakeClock()
+    client, _ = _client(tmp_path, clock)
+    assert client.last_model_used is None
+    client._invoke_sdk = lambda *a: ("ok", 5)  # type: ignore[assignment]
+    client.generate("hi")
+    assert client.last_model_used == "m1"
+
+
+def test_last_model_used_reflects_rotation(tmp_path) -> None:
+    clock = FakeClock()
+    client, _ = _client(tmp_path, clock)
+
+    def fake_sdk(model_name, prompt, json_mode, max_output_tokens):
+        if model_name == "m1":
+            raise RateLimit429("429")
+        return "ok", 2
+
+    client._invoke_sdk = fake_sdk  # type: ignore[assignment]
+    client.generate("hi")
+    assert client.last_model_used == "m2"  # tracks whichever model actually served it
+
+
+def test_next_available_model_prefers_under_limit(tmp_path) -> None:
+    clock = FakeClock()
+    client, rl = _client(tmp_path, clock)
+    assert client.next_available_model() == "m1"  # first in priority order
+    rl.mark_cooldown("m1", 60)
+    assert client.next_available_model() == "m2"  # m1 cooling down, skip to m2
+
+
+def test_next_available_model_none_when_unconfigured() -> None:
+    settings = Settings(gemini_api_key="", enable_ollama=False)
+    client = GeminiClient(settings=settings)
+    assert client.next_available_model() is None

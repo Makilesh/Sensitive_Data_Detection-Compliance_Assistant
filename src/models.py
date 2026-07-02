@@ -133,3 +133,16 @@ class QAResult:
     citations: list[Citation] = field(default_factory=list)
     grounded: bool = True
     model_used: str | None = None
+
+
+@dataclass
+class SummaryResult:
+    """A generated compliance summary and which backend produced it.
+
+    ``model_used`` is ``None`` when the deterministic template fallback served
+    the summary (LLM unavailable/exhausted), so callers can distinguish an
+    AI-generated summary from the template one in the UI.
+    """
+
+    text: str
+    model_used: str | None = None

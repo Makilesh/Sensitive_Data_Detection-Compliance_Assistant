@@ -258,8 +258,11 @@ def run_verification():
     risk_report = classify_risk(pdf_findings, pdf_doc.page_count, settings)
     print(f"PDF Risk Level: {risk_report.level.value} (Score: {risk_report.score})")
 
-    compliance_summary = generate_summary(pdf_doc, pdf_findings, risk_report, client, settings)
-    print(f"Compliance Summary generated (length: {len(compliance_summary)} chars).")
+    summary_result = generate_summary(pdf_doc, pdf_findings, risk_report, client, settings)
+    print(
+        f"Compliance Summary generated (length: {len(summary_result.text)} chars, "
+        f"model: {summary_result.model_used or 'template fallback'})."
+    )
 
     # -------------------------------------------------------------------------
     # 5. Compile Metrics and Generate Verification Report
@@ -294,7 +297,8 @@ def run_verification():
             "score": risk_report.score,
             "summary": risk_report.summary
         },
-        "compliance_summary": compliance_summary
+        "compliance_summary": summary_result.text,
+        "compliance_summary_model": summary_result.model_used
     }
     log_file.write_text(json.dumps(log_data, indent=2), encoding="utf-8")
     print(f"\nVerification details written to: {log_file}")

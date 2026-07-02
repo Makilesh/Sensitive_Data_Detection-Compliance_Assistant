@@ -14,7 +14,7 @@ from src.config import Settings, get_settings
 from src.detection.engine import summarize_counts
 from src.llm.gemini_client import GeminiClient
 from src.llm.prompts import build_compliance_prompt
-from src.models import Document, Finding, RiskReport
+from src.models import Document, Finding, RiskReport, SummaryResult
 
 # Regulation hints + remediation guidance per entity type (single source).
 _REMEDIATION: dict[str, tuple[str, str]] = {
@@ -54,8 +54,13 @@ def generate_summary(
     risk: RiskReport,
     client: GeminiClient | None,
     settings: Settings | None = None,
-) -> str:
-    """Return a Markdown compliance summary grounded in the findings."""
+) -> SummaryResult:
+    """Return a Markdown compliance summary grounded in the findings.
+
+    ``SummaryResult.model_used`` is ``None`` when the deterministic template
+    fallback served the summary, so the UI can show which model (if any)
+    generated it.
+    """
     settings = settings or get_settings()
     brief = _build_brief(findings, risk)
 
@@ -63,10 +68,10 @@ def generate_summary(
         try:
             result = client.generate(build_compliance_prompt(brief), max_output_tokens=1024)
             if result.text.strip():
-                return result.text.strip()
+                return SummaryResult(text=result.text.strip(), model_used=result.model_used)
         except Exception:  # noqa: BLE001 - AllModelsExhausted / SDK errors → template
             pass
-    return _template_summary(findings, risk)
+    return SummaryResult(text=_template_summary(findings, risk), model_used=None)
 
 
 def _template_summary(findings: list[Finding], risk: RiskReport) -> str:
