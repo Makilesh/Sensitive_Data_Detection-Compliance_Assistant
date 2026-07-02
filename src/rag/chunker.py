@@ -13,7 +13,7 @@ import re
 from src.config import Settings, get_settings
 from src.llm.gemini_client import estimate_tokens
 from src.models import Chunk, Document, Finding, Segment
-from src.redaction.masker import redact_text
+from src.redaction.masker import redact_all_occurrences
 
 _SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
 
@@ -79,13 +79,16 @@ def chunk_document(
 
 
 def _build_chunk(index: int, group: list[Segment], findings: list[Finding]) -> Chunk | None:
-    """Assemble one masked chunk from a group of sentence units."""
+    """Assemble one fully-masked chunk from a group of sentence units.
+
+    Uses value-based redaction so EVERY occurrence of a detected value is masked
+    within the chunk (not just the one span that was detected) — otherwise a
+    repeated name/number could leak into the embedding and the LLM's context.
+    """
     if not group:
         return None
-    masked_parts = [
-        redact_text(unit.text, findings, base_offset=unit.char_offset) for unit in group
-    ]
-    text = " ".join(part.strip() for part in masked_parts if part.strip())
+    raw = " ".join(unit.text.strip() for unit in group if unit.text.strip())
+    text = redact_all_occurrences(raw, findings).strip()
     if not text:
         return None
     first = group[0]
