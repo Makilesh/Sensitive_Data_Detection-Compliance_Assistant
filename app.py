@@ -312,15 +312,38 @@ def main() -> None:
         accept_multiple_files=True,
     )
 
+    submit_clicked = st.button("Submit / Analyze Uploaded Files", type="primary")
+
     documents = st.session_state.setdefault("documents", {})
-    for uploaded in uploaded_files or []:
-        raw_bytes = uploaded.getvalue()
-        try:
-            doc = load_document(uploaded.name, raw_bytes, settings)
-        except UnsupportedFileTypeError as exc:
-            st.error(f"{uploaded.name}: {exc}")
-            continue
-        documents[doc.doc_id] = {"document": doc, "raw_bytes": raw_bytes}
+
+    if submit_clicked:
+        new_documents = {}
+        for uploaded in uploaded_files or []:
+            raw_bytes = uploaded.getvalue()
+            try:
+                doc = load_document(uploaded.name, raw_bytes, settings)
+                new_documents[doc.doc_id] = {"document": doc, "raw_bytes": raw_bytes}
+            except UnsupportedFileTypeError as exc:
+                st.error(f"{uploaded.name}: {exc}")
+                continue
+        
+        # Clean caches for any documents that were removed from the uploader
+        findings_cache = st.session_state.setdefault("findings_cache", {})
+        risk_cache = st.session_state.setdefault("risk_cache", {})
+        summary_cache = st.session_state.setdefault("summary_cache", {})
+        store_cache = st.session_state.setdefault("store_cache", {})
+        chat_histories = st.session_state.setdefault("chat_histories", {})
+
+        for doc_id in list(findings_cache.keys()):
+            if doc_id not in new_documents:
+                findings_cache.pop(doc_id, None)
+                risk_cache.pop(doc_id, None)
+                summary_cache.pop(doc_id, None)
+                store_cache.pop(doc_id, None)
+                chat_histories.pop(doc_id, None)
+
+        st.session_state["documents"] = new_documents
+        documents = new_documents
 
     with st.sidebar:
         st.header("Configuration")
@@ -358,7 +381,7 @@ def main() -> None:
         render_audit(settings)
 
     if not documents or active_id is None:
-        st.info("👆 Upload a PDF, TXT, or CSV file to begin.")
+        st.info("👆 Upload a PDF, TXT, or CSV file and click 'Submit / Analyze Uploaded Files' to begin.")
         return
 
     entry = documents[active_id]
