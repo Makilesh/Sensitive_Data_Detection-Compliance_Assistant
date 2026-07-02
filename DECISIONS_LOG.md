@@ -3,6 +3,28 @@
 Significant engineering decisions, trade-offs, spec challenges, and auto-applied
 minor improvements — with rationale.
 
+## Post-verification bug fixes (from VERIFICATION_RESULTS.md §4)
+
+- **D35 — Dedup ranks trust before span length (critical).** `engine._dedupe`
+  sorted `(span_len, rank, conf)`, so a longer low-trust spaCy/LLM span could evict
+  an inner deterministic finding (reproduced: spaCy tagged `email=alice@example.com`
+  as ORG and dropped the EMAIL). Reordered to `(rank, span_len, conf)`. Equal-rank
+  overlaps (CREDIT_CARD vs AADHAAR, both rank 5) still fall back to span length, so
+  the card still wins. Regression tests added.
+- **D36 — LLM JSON parsed with `strict=False` (high).** `_parse_findings` used
+  strict `json.loads`, which rejects literal newlines/tabs inside string values and
+  silently returned `[]` — dropping multi-line confidential snippets. `strict=False`
+  tolerates control chars in strings (a safe superset).
+- **D37 — Case-insensitive PAN / IFSC / EMPLOYEE_ID (medium).** Added
+  `re.IGNORECASE` to the PAN/IFSC specs and `(?i)` to the default `employee_id_
+  pattern` so lowercase occurrences are caught. `value_raw` preserves original case.
+- **D38 — Password label may be quoted (medium).** Regex now allows optional quotes
+  around the `password` label (`'password': '…'`), matching JSON/dict-style creds;
+  the length≥4 guard still skips empty passwords.
+- **D39 — Conservative international phone (low).** Added a second PHONE spec
+  requiring a leading `+country` code (`\+\d{1,3}(?:[\s-]?\d){6,12}`); the mandatory
+  `+` prefix keeps false positives low. Indian spec remains primary (higher rank).
+
 ## Phase 1
 
 - **D1 — Config via `pydantic-settings` as single source of truth.** All tunables
