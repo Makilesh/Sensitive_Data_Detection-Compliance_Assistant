@@ -33,9 +33,9 @@ tier** with a rate-limit-aware model-rotation engine.
 git clone <your-repo-url>
 cd Sensitive_Data_Detection_Compliance_Assistant
 
-# 2. Install dependencies
+# 2. Install dependencies (the spaCy model installs via requirements.txt)
 pip install -r requirements.txt
-python -m spacy download en_core_web_sm
+# Optional fallback if the model didn't install: python -m spacy download en_core_web_sm
 
 # 3. Configure secrets
 cp .env.example .env
@@ -56,19 +56,31 @@ pre-installed. RAG indexes and the audit log are persisted via mounted volumes.
 
 ### Tests & linting
 ```bash
-pytest          # 57 tests
+pytest          # 80 tests
 ruff check .    # lint
 ```
 
 ### Deploy to Streamlit Community Cloud (free)
-1. Push this repo to GitHub.
-2. On https://share.streamlit.io create an app pointing at `app.py`.
+1. Push this repo to GitHub (already done).
+2. On https://share.streamlit.io → **New app**, point it at `app.py` on the `main`
+   branch. Under **Advanced settings**, select **Python 3.12** (matches the pinned
+   CPU `torch` wheel).
 3. In **App settings → Secrets**, add:
    ```toml
    GEMINI_API_KEY = "your_key_here"
    ```
-4. `packages.txt` (already included) installs `tesseract-ocr` on the host so the
-   OCR fallback works.
+   (Streamlit exposes secrets as environment variables, which the app reads.)
+4. Dependencies are deploy-ready out of the box:
+   - `requirements.txt` installs **CPU-only torch** (small image) and the
+     **spaCy `en_core_web_sm` model** as a wheel (Cloud doesn't run
+     `spacy download`).
+   - `packages.txt` installs `tesseract-ocr` for the OCR fallback.
+5. **If the free tier runs low on memory**, trim runtime models via Secrets:
+   `SDA_ENABLE_NER = "false"` and/or `SDA_ENABLE_HYBRID_SEARCH = "false"`. Keep
+   `SDA_ENABLE_RERANKER = "false"` (default) — the reranker model is heavy.
+6. Ollama isn't available on Cloud; the app automatically uses cloud Gemini. Leave
+   `SDA_LOCAL_ONLY_MODE = "false"` so it isn't forced to the (absent) local model.
+7. Once live, paste the URL into the **Live demo** link at the top of this README.
 
 ---
 

@@ -1,8 +1,17 @@
+# Install CPU-only PyTorch wheels (keeps the Streamlit Cloud image small — the
+# default CUDA build is ~750MB and can break the free-tier build). Requires the
+# app to run on Python 3.11 or 3.12 (select this in Streamlit Cloud → Advanced).
+--extra-index-url https://download.pytorch.org/whl/cpu
+
 # Core UI
 streamlit==1.39.0
 
 # LLM (Google Gemini free tier)
 google-generativeai==0.8.3
+
+# Numerics — pin to NumPy 1.x (torch 2.2.x is built against it; avoids the
+# "compiled with NumPy 1.x cannot run in NumPy 2.x" ABI break at import).
+numpy==1.26.4
 
 # Config & data models
 python-dotenv==1.0.1
@@ -19,8 +28,12 @@ pillow==11.0.0
 
 # NLP / detection
 spacy==3.8.2
+# spaCy model as a pip dependency so it installs on Streamlit Cloud (which does
+# not run `python -m spacy download`). NER degrades gracefully if absent.
+en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
 
 # RAG
+torch==2.2.2+cpu       # CPU-only (see --extra-index-url above)
 faiss-cpu==1.9.0
 sentence-transformers==3.2.1
 tiktoken==0.8.0
