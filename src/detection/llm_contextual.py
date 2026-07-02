@@ -51,7 +51,7 @@ def detect_contextual(
 
     prompt = with_preamble(_PROMPT_TEMPLATE.format(document=text[:max_chars]))
     try:
-        result = client.generate(prompt, json_mode=True, max_output_tokens=1024)
+        result = client.generate(prompt, json_mode=True, max_output_tokens=2048)
     except Exception:  # noqa: BLE001 - AllModelsExhausted / SDK errors → skip
         return []
 
@@ -119,21 +119,33 @@ def _locate_snippet(text: str, snippet: str) -> tuple[int, int]:
 
 
 def _parse_findings(raw: str) -> list[dict]:
-    """Best-effort parse of the model's JSON, tolerant of code fences."""
+    """Best-effort parse of the model's JSON, tolerant of fences and truncation."""
     cleaned = raw.strip()
     if cleaned.startswith("```"):
         cleaned = cleaned.strip("`")
         if cleaned.lower().startswith("json"):
             cleaned = cleaned[4:]
+
+    # Preferred path: a complete, well-formed object. strict=False tolerates
+    # literal control chars (newlines/tabs) inside string values.
     start, end = cleaned.find("{"), cleaned.rfind("}")
-    if start == -1 or end == -1:
-        return []
-    try:
-        # strict=False tolerates literal control chars (newlines/tabs) inside
-        # string values — LLMs frequently emit multi-line snippets verbatim,
-        # which strict JSON would reject and silently drop.
-        data = json.loads(cleaned[start : end + 1], strict=False)
-    except ValueError:
-        return []
-    findings = data.get("findings", [])
-    return findings if isinstance(findings, list) else []
+    if start != -1 and end > start:
+        try:
+            data = json.loads(cleaned[start : end + 1], strict=False)
+            findings = data.get("findings", [])
+            if isinstance(findings, list):
+                return findings
+        except ValueError:
+            pass
+
+    # Salvage path: the response was truncated (max tokens) → the outer array is
+    # unterminated. Recover every complete flat {snippet, rationale} object.
+    salvaged: list[dict] = []
+    for match in re.finditer(r"\{[^{}]*\}", cleaned):
+        try:
+            obj = json.loads(match.group(0), strict=False)
+        except ValueError:
+            continue
+        if isinstance(obj, dict) and "snippet" in obj:
+            salvaged.append(obj)
+    return salvaged

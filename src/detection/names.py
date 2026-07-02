@@ -34,10 +34,11 @@ _NOT_A_NAME = {
 }
 
 _LABELED = re.compile(
-    r"(?im)^[ \t]*(?:full[ \t]*name|name|holder(?:'s)?[ \t]*name|account[ \t]*holder"
+    r"(?im)^[ \t]*(?:full[ \t]*name|first[ \t]*name|last[ \t]*name|middle[ \t]*name"
+    r"|given[ \t]*name|sur[ \t]*name|name|holder(?:'s)?[ \t]*name|account[ \t]*holder"
     r"|card[ \t]*holder|customer[ \t]*name|employee[ \t]*name|applicant(?:[ \t]*name)?"
     r"|beneficiary(?:[ \t]*name)?|nominee(?:[ \t]*name)?|father'?s?[ \t]*name"
-    r"|mother'?s?[ \t]*name|spouse(?:'s)?[ \t]*name)[ \t]*[:\-][ \t]*(" + _NAME + r")"
+    r"|mother(?:'?s)?[ \t]*name|spouse(?:'s)?[ \t]*name)[ \t]*[:\-][ \t]*(" + _NAME + r")"
 )
 _RELATION = re.compile(r"(?i)\b(?:s/o|d/o|w/o|c/o)[ \t]*[:\-]?[ \t]*(" + _NAME + r")")
 _SALUTATION = re.compile(
