@@ -24,7 +24,7 @@ pymupdf==1.24.11
 pdfplumber==0.11.4
 charset-normalizer==3.4.0
 pytesseract==0.3.13
-pillow==11.0.0
+pillow==10.4.0  # streamlit 1.39 requires pillow<11
 
 # NLP / detection
 spacy==3.8.2
