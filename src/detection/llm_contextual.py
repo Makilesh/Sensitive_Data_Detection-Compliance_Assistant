@@ -37,23 +37,33 @@ _TYPE_MAP = {
 }
 
 _PROMPT_TEMPLATE = """You are the final verification step of a PII redaction tool. \
-Identify EVERY piece of sensitive or personal data in the document below that must \
-be redacted before sharing. This includes:
-- Person names in ANY language or script (English, Tamil, Hindi, etc.).
-- Postal addresses and place / locality names.
+List EVERY piece of sensitive or personal data in the document below that must be \
+redacted before sharing. Be exhaustive — it is far worse to miss an item than to \
+over-include one.
+
+Include ALL of these, wherever they appear:
+- Person names — first/last/father's/mother's/spouse names.
+- Every place name: locality, village, town, city, VTC, post office, sub-district,
+  district, state, country (e.g. "Devakottai", "Sivaganga", "Tamil Nadu").
+- Postal addresses.
 - Dates of birth.
 - Organizations.
 - Confidential business information (NDAs, financials, M&A, trade secrets).
 
+CRITICAL — MULTILINGUAL: This document may repeat the SAME information in more than \
+one language or script (for example an English section AND a Tamil/Hindi section). \
+You MUST return EVERY version separately — the English form AND the local-script \
+form of each name and place. Do not skip the non-English (e.g. Tamil) versions, and \
+do not skip place names.
+
 Rules:
-- Only report text that is literally present in the document (quote it verbatim,
-  in its original script).
-- Do NOT invent, translate, paraphrase, or infer anything not written.
+- Only report text that is literally present in the document; quote it verbatim in
+  its original script (do NOT translate or transliterate — copy it exactly).
 - Classify each with a "type" from: PERSON, LOCATION, ORG, DOB, CONFIDENTIAL_INFO.
 - If nothing qualifies, return an empty list.
 
 Return ONLY valid JSON:
-{{"findings": [{{"snippet": "<verbatim quote>", "type": "PERSON", "rationale": "<why>"}}]}}
+{{"findings": [{{"snippet": "<verbatim quote>", "type": "LOCATION", "rationale": "<why>"}}]}}
 
 DOCUMENT:
 \"\"\"
@@ -72,7 +82,10 @@ def detect_contextual(
 
     prompt = with_preamble(_PROMPT_TEMPLATE.format(document=text[:max_chars]))
     try:
-        result = client.generate(prompt, json_mode=True, max_output_tokens=2048)
+        # temperature=0 → deterministic, repeatable extraction (consistent recall).
+        result = client.generate(
+            prompt, json_mode=True, max_output_tokens=3072, temperature=0.0
+        )
     except Exception:  # noqa: BLE001 - AllModelsExhausted / SDK errors → skip
         return []
 

@@ -8,10 +8,16 @@ pipeline never hard-fails.
 
 from __future__ import annotations
 
+import re
+
 from src.models import EntityType, Finding
 from src.redaction.masker import mask_value
 
 _MODEL_NAME = "en_core_web_sm"
+# The model is English; it can only meaningfully label Latin-script text. Skip
+# entities without an ASCII letter (e.g. Tamil/Hindi), which it otherwise
+# mislabels — the multilingual Gemini pass handles those instead.
+_HAS_LATIN = re.compile(r"[A-Za-z]")
 _LABEL_MAP = {
     "PERSON": EntityType.PERSON,
     "ORG": EntityType.ORG,
@@ -50,6 +56,8 @@ def detect_ner(text: str, max_chars: int = 100_000) -> list[Finding]:
         entity_type = _LABEL_MAP.get(ent.label_)
         if entity_type is None:
             continue
+        if not _HAS_LATIN.search(ent.text):
+            continue  # non-Latin (e.g. Tamil) → let the Gemini pass classify it
         findings.append(
             Finding(
                 entity_type=entity_type,

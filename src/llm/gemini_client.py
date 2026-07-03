@@ -97,6 +97,7 @@ class GeminiClient:
         self._sdk_configured = False
         self._local_only = False  # session override; OR'd with settings.local_only_mode
         self._last_model_used: str | None = None  # single source of truth for the UI
+        self._temperature: float | None = None  # per-call sampling temperature
 
     def set_local_only(self, enabled: bool) -> None:
         """Toggle privacy local-only mode at runtime (cloud Gemini blocked)."""
@@ -139,13 +140,19 @@ class GeminiClient:
         *,
         json_mode: bool = False,
         max_output_tokens: int = 1024,
+        temperature: float | None = None,
     ) -> LLMResult:
-        """Generate text, rotating across models on rate-limit / transient errors."""
+        """Generate text, rotating across models on rate-limit / transient errors.
+
+        ``temperature=0`` makes extraction deterministic (used by the detection
+        passes for consistent, repeatable recall). ``None`` keeps the model default.
+        """
         if not self.is_configured:
             raise LLMUnavailableError(
                 "No LLM backend available (set GEMINI_API_KEY or enable Ollama)"
             )
 
+        self._temperature = temperature  # read by _invoke_sdk / _invoke_ollama
         prompt_tokens = estimate_tokens(prompt)
 
         for spec in self._settings.model_registry:
@@ -218,11 +225,14 @@ class GeminiClient:
         import json as _json
         import urllib.request
 
+        options: dict = {"num_predict": max_output_tokens}
+        if self._temperature is not None:
+            options["temperature"] = self._temperature
         payload: dict = {
             "model": model_name,
             "prompt": prompt,
             "stream": False,
-            "options": {"num_predict": max_output_tokens},
+            "options": options,
         }
         if json_mode:
             payload["format"] = "json"
@@ -258,6 +268,8 @@ class GeminiClient:
         generation_config: dict = {"max_output_tokens": max_output_tokens}
         if json_mode:
             generation_config["response_mime_type"] = "application/json"
+        if self._temperature is not None:
+            generation_config["temperature"] = self._temperature
 
         model = genai.GenerativeModel(model_name)
         response = model.generate_content(prompt, generation_config=generation_config)
