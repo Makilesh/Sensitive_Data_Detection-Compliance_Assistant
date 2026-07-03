@@ -151,11 +151,11 @@ engineering rationale behind each choice.
 The design deliberately separates **deterministic** detection from **probabilistic**
 AI, using each where it is strongest, in three layers:
 
-1. **Deterministic structured-PII detection (regex + checksums)** — Aadhaar (regex
-   + **Verhoeff** checksum), Aadhaar **VID**, PAN, credit cards (regex + **Luhn** +
+1. **Deterministic structured-PII detection (regex + checksums)** — Aadhaar (regex +
+   **Verhoeff** checksum), Aadhaar **VID**, PAN, credit cards (regex + **Luhn** +
    network id), IFSC, phone (Indian + international), bank accounts (keyword
    proximity), **date of birth** (numeric + written forms), Employee IDs, and
-   provider API-key patterns (AWS / OpenAI incl. `sk-proj-` / GitHub / JWT / labeled
+   provider API-key patterns (AWS / OpenAI / GitHub / JWT / labeled
    secrets & passwords). All case-insensitive where appropriate. Checksums cut
    false positives; the LLM is never trusted to "find" these.
 2. **Deterministic name detection (structure-based) + spaCy NER** — person names
