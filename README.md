@@ -11,8 +11,8 @@ model-rotation engine and an optional local-LLM fallback.
 
 | Item | Link |
 | --- | --- |
-| **Working prototype deployment** | _<paste your Streamlit Community Cloud URL here>_ |
-| **Demo video (2–5 min)** | _<paste your video link here>_ |
+| **Working prototype deployment** | [_<paste your Streamlit Community Cloud URL here>_](https://sensitivedatadetection-complianceassistant.streamlit.app/) |
+| **Demo video (2–5 min)** | [_<paste your video link here>_](https://drive.google.com/drive/folders/1BVPEwaQBmpQ2xFgIiHXCtziVb7fIn7hK?usp=sharing) |
 | **GitHub repository** | https://github.com/Makilesh/Sensitive_Data_Detection-Compliance_Assistant |
 
 ---
