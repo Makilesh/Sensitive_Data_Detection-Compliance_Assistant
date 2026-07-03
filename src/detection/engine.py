@@ -10,13 +10,16 @@ detectors.
 
 from __future__ import annotations
 
+import re
+
 from src.config import Settings, get_settings
 from src.detection.llm_contextual import detect_contextual
 from src.detection.names import detect_names
 from src.detection.ner import detect_ner
 from src.detection.patterns import detect_patterns
 from src.llm.gemini_client import GeminiClient
-from src.models import Document, Finding, Segment
+from src.models import Document, EntityType, Finding, Segment
+from src.redaction.masker import mask_value
 
 # Detector trust ranking used to break ties when spans overlap.
 _DETECTOR_RANK = {
@@ -28,6 +31,8 @@ _DETECTOR_RANK = {
     "keyword-proximity": 4,
     "vid-keyword": 4,
     "dob-keyword": 4,
+    "pincode-keyword": 4,
+    "pincode-suffix": 4,
     "openai-key": 4,
     "jwt": 4,
     "assigned-secret": 4,
@@ -36,9 +41,17 @@ _DETECTOR_RANK = {
     "name-relation": 3,
     "name-salutation": 3,
     "name-addressee": 3,
+    "address-number": 3,
     "spacy": 2,
     "llm": 1,
 }
+
+# A bare 1–3 digit number immediately followed by a comma, right after a PERSON
+# finding — the age / house-door-number that Indian ID/relation fields commonly
+# place straight after a name (e.g. "S/O: Marimuthu, 57, ..."). Whitespace here
+# matches across newlines too, since PDF text extraction often puts each
+# comma-separated field on its own line.
+_TRAILING_ADDRESS_NUMBER = re.compile(r"^\s*,\s*(\d{1,3})\s*,")
 
 
 def run_detection(
@@ -61,10 +74,48 @@ def run_detection(
     if use_llm:
         findings.extend(detect_contextual(document.text, client))
 
+    # Runs after every PERSON source (names.py, spaCy, LLM) so it also catches
+    # the number after a non-Latin name the Latin-only regex detectors can't see.
+    findings.extend(_detect_trailing_address_numbers(document.text, findings))
+
     findings = _dedupe(findings)
     _locate(findings, document.segments)
     findings.sort(key=lambda f: (f.start, f.entity_type.value))
     return findings
+
+
+def _detect_trailing_address_numbers(text: str, findings: list[Finding]) -> list[Finding]:
+    """Catch an age/house-number sitting right after any detected PERSON name.
+
+    Positional, not language-specific: it looks at the text immediately after
+    each PERSON finding's span (from *any* source — regex, spaCy, or the
+    multilingual LLM pass), so a number following a Tamil/Hindi name is caught
+    the same way as one following a Latin name. Classified as LOCATION since it
+    is an address component, not identity data on its own.
+    """
+    extra: list[Finding] = []
+    window = 12
+    for f in findings:
+        if f.entity_type is not EntityType.PERSON:
+            continue
+        tail = text[f.end : f.end + window]
+        m = _TRAILING_ADDRESS_NUMBER.match(tail)
+        if not m:
+            continue
+        start = f.end + m.start(1)
+        value = m.group(1)
+        extra.append(
+            Finding(
+                entity_type=EntityType.LOCATION,
+                value_masked=mask_value(EntityType.LOCATION, value),
+                value_raw=value,
+                start=start,
+                end=start + len(value),
+                detector="address-number",
+                confidence=0.7,
+            )
+        )
+    return extra
 
 
 def _dedupe_ner_by_value(ner_findings: list[Finding]) -> list[Finding]:

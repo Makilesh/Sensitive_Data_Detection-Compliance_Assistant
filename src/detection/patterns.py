@@ -186,6 +186,24 @@ PATTERN_SPECS: list[PatternSpec] = [
         group=1,
         confidence=0.85,
     ),
+    # Indian postal PIN code — labeled field ("PIN Code: 630302", "Pincode: 630302").
+    _spec(
+        EntityType.LOCATION,
+        r"(?i)\bpin(?:\s*code)?\s*[:.]?\s*([1-9]\d{5})\b",
+        "pincode-keyword",
+        group=1,
+        confidence=0.85,
+    ),
+    # Indian postal PIN code — the "<State> - NNNNNN" idiom common at the end of
+    # an address line on ID cards (e.g. "Tamil Nadu - 630302"). Anchored to
+    # end-of-line so it doesn't match unrelated dash-separated numbers mid-text.
+    _spec(
+        EntityType.LOCATION,
+        r"(?m)-\s*([1-9]\d{5})\s*$",
+        "pincode-suffix",
+        group=1,
+        confidence=0.75,
+    ),
     _spec(
         EntityType.BANK_ACCOUNT,
         r"(?i)(?:a/c|acc(?:ount)?)\s*(?:no|number|#)?\s*[:.]?\s*(\d{9,18})",

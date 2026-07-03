@@ -45,7 +45,7 @@ Include ALL of these, wherever they appear:
 - Person names — first/last/father's/mother's/spouse names.
 - Every place name: locality, village, town, city, VTC, post office, sub-district,
   district, state, country (e.g. "Devakottai", "Sivaganga", "Tamil Nadu").
-- Postal addresses.
+- Postal / PIN / ZIP codes, and house/door/plot numbers within an address.
 - Dates of birth.
 - Organizations.
 - Confidential business information (NDAs, financials, M&A, trade secrets).

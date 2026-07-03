@@ -3,6 +3,32 @@
 Significant engineering decisions, trade-offs, spec challenges, and auto-applied
 minor improvements — with rationale.
 
+## Post-build — Address completeness (PIN code + house/age number leaks)
+
+A real Aadhaar showed the postal PIN code (`630302`) and the age/house-number
+immediately after "S/O: <father>," surviving redaction — both **deterministic,
+model-independent** fixes:
+
+- **D48 — Two new PIN-code detectors.** `pincode-keyword` (`PIN Code:` / `Pincode:`
+  / `Pin:` + 6 digits) and `pincode-suffix` (the `"<State> - NNNNNN"` idiom common
+  at the end of an address line on Indian ID cards, anchored to end-of-line to
+  avoid matching unrelated dash-separated numbers). Both classified `LOCATION`
+  (no new entity type needed).
+- **D49 — Positional address-number detector (`_detect_trailing_address_numbers`
+  in engine.py).** A bare 1–3 digit number immediately followed by a comma, right
+  after ANY detected PERSON finding — regardless of which detector found that
+  person (regex, spaCy, or the multilingual LLM pass) or what script the name is
+  in. This is why it's positional rather than a language-specific regex: it also
+  catches the number following a Tamil name that only the LLM pass can read.
+  Whitespace matching spans newlines, since PDF extraction often puts each
+  comma-separated address field on its own line even though it renders as one
+  visual line. Classified `LOCATION` (address component, not identity data alone).
+  Runs after all PERSON-producing detectors, before dedupe.
+- Both fixes are deterministic — they work identically whether or not an LLM call
+  succeeds, unlike the multilingual place-name detection (D40–D43) which depends
+  on the Gemini verification pass and can vary by which model in the rotation
+  serves the call. Regression tests: `tests/test_address_completeness.py` (10).
+
 ## Post-verification bug fixes (from VERIFICATION_RESULTS.md §4)
 
 - **D35 — Dedup ranks trust before span length (critical).** `engine._dedupe`
