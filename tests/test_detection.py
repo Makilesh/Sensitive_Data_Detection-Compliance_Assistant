@@ -100,7 +100,7 @@ class _FakeClient:
     def is_configured(self) -> bool:
         return self._configured
 
-    def generate(self, prompt, *, json_mode=False, max_output_tokens=1024):
+    def generate(self, prompt, *, json_mode=False, max_output_tokens=1024, **kwargs):
         from src.llm.gemini_client import LLMResult
 
         return LLMResult(text=self._payload, model_used="fake", prompt_tokens=1, response_tokens=1)

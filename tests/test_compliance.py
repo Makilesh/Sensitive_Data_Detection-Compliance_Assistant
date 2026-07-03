@@ -28,7 +28,7 @@ class _FakeClient:
     def is_configured(self) -> bool:
         return self._configured
 
-    def generate(self, prompt, *, json_mode=False, max_output_tokens=1024):
+    def generate(self, prompt, *, json_mode=False, max_output_tokens=1024, **kwargs):
         self.captured = prompt
         return LLMResult(text=self._text, model_used="fake", prompt_tokens=1, response_tokens=1)
 
@@ -70,7 +70,7 @@ def test_llm_summary_used_when_available() -> None:
 
 def test_llm_error_falls_back_to_template() -> None:
     class _Boom(_FakeClient):
-        def generate(self, prompt, *, json_mode=False, max_output_tokens=1024):
+        def generate(self, prompt, *, json_mode=False, max_output_tokens=1024, **kwargs):
             raise RuntimeError("boom")
 
     findings = _findings()

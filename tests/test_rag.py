@@ -35,7 +35,7 @@ class _FakeClient:
     def is_configured(self) -> bool:
         return self._configured
 
-    def generate(self, prompt, *, json_mode=False, max_output_tokens=1024):
+    def generate(self, prompt, *, json_mode=False, max_output_tokens=1024, **kwargs):
         self.last_prompt = prompt
         return LLMResult(text=self._text, model_used="fake-model", prompt_tokens=1, response_tokens=1)
 
