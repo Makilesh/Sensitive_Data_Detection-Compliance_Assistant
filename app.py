@@ -114,7 +114,9 @@ def render_redaction(
 
 def render_summary(document: Document, findings: list[Finding], risk: RiskReport, settings: Settings) -> None:
     cache = st.session_state.setdefault("summary_cache", {})
-    if st.button("Generate compliance summary", type="primary") or document.doc_id in cache:
+    if st.button(
+        "Generate compliance summary", type="primary", key=f"summary_{document.doc_id}"
+    ) or document.doc_id in cache:
         if document.doc_id not in cache:
             with st.spinner("Generating compliance summary…"):
                 cache[document.doc_id] = generate_summary(
@@ -153,7 +155,10 @@ def render_chat(document: Document, findings: list[Finding], settings: Settings)
     documents = st.session_state.get("documents", {})
     corpus = False
     if len(documents) > 1:
-        corpus = st.checkbox("🔎 Search across all uploaded documents (corpus mode)")
+        corpus = st.checkbox(
+            "🔎 Search across all uploaded documents (corpus mode)",
+            key=f"corpus_{document.doc_id}",
+        )
 
     histories = st.session_state.setdefault("chat_histories", {})
     history = histories.setdefault(document.doc_id, [])
@@ -162,7 +167,10 @@ def render_chat(document: Document, findings: list[Finding], settings: Settings)
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
-    question = st.chat_input("e.g. What sensitive data exists in the document?")
+    question = st.chat_input(
+        "e.g. What sensitive data exists in the document?",
+        key=f"chat_{document.doc_id}",
+    )
     if not question:
         return
 
@@ -262,7 +270,7 @@ def render_overview(document: Document, findings: list[Finding]) -> None:
         st.text(document.text[:2000] + ("…" if len(document.text) > 2000 else ""))
 
 
-def render_findings(findings: list[Finding]) -> None:
+def render_findings(findings: list[Finding], doc_id: str) -> None:
     if not findings:
         st.success("No sensitive data detected.")
         return
@@ -271,7 +279,9 @@ def render_findings(findings: list[Finding]) -> None:
     st.write("**Findings by type**")
     st.bar_chart(pd.Series(counts, name="count"))
 
-    reveal = st.checkbox("Reveal raw values (handle with care)", value=False)
+    reveal = st.checkbox(
+        "Reveal raw values (handle with care)", value=False, key=f"reveal_{doc_id}"
+    )
     rows = [
         {
             "Type": f.entity_type.value,
@@ -310,13 +320,16 @@ def main() -> None:
         type=["pdf", "txt", "csv"],
         help="Supported formats: PDF, TXT, CSV.",
         accept_multiple_files=True,
+        key="uploader",
     )
 
-    submit_clicked = st.button("Submit / Analyze Uploaded Files", type="primary")
+    submit_clicked = st.button(
+        "Submit / Analyze Uploaded Files", type="primary", key="submit_btn"
+    )
 
     documents = st.session_state.setdefault("documents", {})
 
-    if submit_clicked:
+    if submit_clicked and uploaded_files:
         new_documents = {}
         for uploaded in uploaded_files or []:
             raw_bytes = uploaded.getvalue()
@@ -345,6 +358,11 @@ def main() -> None:
         st.session_state["documents"] = new_documents
         documents = new_documents
 
+        # Drop a stale active-document selection so the keyed selectbox can't
+        # retain a doc_id that is no longer among its options.
+        if st.session_state.get("active_document_id") not in new_documents:
+            st.session_state.pop("active_document_id", None)
+
     with st.sidebar:
         st.header("Configuration")
         st.write(f"**Embedding model:** `{settings.embedding_model}`")
@@ -361,6 +379,7 @@ def main() -> None:
             "🔒 Local-only (no cloud)",
             value=settings.local_only_mode,
             help="Force the local Ollama backend — no document text leaves this machine.",
+            key="local_only",
         )
         get_client().set_local_only(local_only)
 
@@ -375,6 +394,7 @@ def main() -> None:
                 "Active document",
                 options=list(documents.keys()),
                 format_func=lambda i: labels[i],
+                key="active_document_id",
             )
         st.divider()
         render_quota_panel(get_client())
@@ -395,7 +415,7 @@ def main() -> None:
     with tabs[0]:
         render_overview(document, findings)
     with tabs[1]:
-        render_findings(findings)
+        render_findings(findings, document.doc_id)
     with tabs[2]:
         render_risk(risk)
     with tabs[3]:
