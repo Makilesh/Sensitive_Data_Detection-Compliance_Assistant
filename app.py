@@ -203,13 +203,20 @@ def render_chat(document: Document, findings: list[Finding], settings: Settings)
 
 
 def _answer_corpus(question: str, documents: dict, settings: Settings):
-    """Merge findings + indexes across all uploaded documents for a corpus answer."""
+    """Merge findings + indexes across all uploaded documents for a corpus answer.
+
+    Every document is processed first (``ensure_processed``) so its findings exist
+    before the search index is built — otherwise a document the user never opened
+    would be indexed with no findings and the chunker could not mask it, leaking
+    raw PII into the vector store and citations.
+    """
     all_findings: list[Finding] = []
     stores = []
-    for doc_id, entry in documents.items():
-        findings = st.session_state["findings_cache"].get(doc_id, [])
+    for entry in documents.values():
+        doc = entry["document"]
+        findings, _ = ensure_processed(doc, settings)
         all_findings.extend(findings)
-        stores.append(get_store(entry["document"], findings, settings))
+        stores.append(get_store(doc, findings, settings))
     return answer_corpus(question, all_findings, get_client(), stores, settings=settings)
 
 
